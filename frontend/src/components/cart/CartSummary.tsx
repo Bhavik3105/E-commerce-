@@ -78,3 +78,4 @@ export function CartSummary({ showCheckoutButton = true }: CartSummaryProps) {
     </div>
   );
 }
+

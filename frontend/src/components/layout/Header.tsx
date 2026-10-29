@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { navLinks, siteConfig } from "@/lib/constants";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
@@ -14,8 +15,17 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur-sm">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl font-bold tracking-tight text-primary">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-neutral-200 shadow-sm flex-shrink-0">
+            <Image
+              src="/logo.jpg"
+              alt="Jummip Logo"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+          <span className="text-2xl font-extrabold tracking-tight text-neutral-900">
             Jummip
           </span>
         </Link>

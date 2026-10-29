@@ -96,3 +96,4 @@ export function CartItemCard({ item }: CartItemCardProps) {
     </div>
   );
 }
+

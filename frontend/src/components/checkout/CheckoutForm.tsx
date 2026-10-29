@@ -366,3 +366,4 @@ export function CheckoutForm({ onSubmit, isLoading = false }: CheckoutFormProps)
     </form>
   );
 }
+

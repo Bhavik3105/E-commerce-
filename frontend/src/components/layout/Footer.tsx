@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { siteConfig, footerLinks } from "@/lib/constants";
 
 export function Footer() {
@@ -10,8 +11,16 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand Column */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link href="/" className="inline-block">
-              <span className="text-2xl font-bold tracking-tight text-primary">
+            <Link href="/" className="inline-flex items-center gap-2.5">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-neutral-200 flex-shrink-0">
+                <Image
+                  src="/logo.jpg"
+                  alt="Jummip Logo"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <span className="text-2xl font-extrabold tracking-tight text-neutral-900">
                 Jummip
               </span>
             </Link>

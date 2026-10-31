@@ -22,7 +22,9 @@ export const navLinks = [
   { label: "Men's", href: '/category/mens-wear' },
   { label: "Women's", href: '/category/womens-wear' },
   { label: "Kids'", href: '/category/kids-wear' },
-  { label: 'Contact', href: '/contact' },
+  { label: 'About Us', href: '/about' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Contact Us', href: '/contact' },
 ] as const;
 
 export const footerLinks = {
@@ -33,6 +35,8 @@ export const footerLinks = {
     { label: 'Accessories', href: '/category/accessories' },
   ],
   support: [
+    { label: 'About Us', href: '/about' },
+    { label: 'Blog', href: '/blog' },
     { label: 'Contact Us', href: '/contact' },
     { label: 'Shipping Policy', href: '/shipping-policy' },
     { label: 'Returns & Refunds', href: '/return-policy' },

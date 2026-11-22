@@ -3,8 +3,8 @@
   "services": {
     "backend": {
       "root": "backend",
-      "framework": "node",
-      "entrypoint": "server.cjs"
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     },
     "frontend": {
       "root": "frontend",

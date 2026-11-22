@@ -4,12 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { navLinks, siteConfig } from "@/lib/constants";
+import { useAccount } from "@/lib/account-context";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { totalItems } = useCart();
+  const { totalItems, ready } = useCart();
+  const { customer, ready: accountReady } = useAccount();
+  const accountHref = accountReady && customer ? "/account" : "/login";
+  const accountLabel = accountReady && customer ? "Account" : "Login";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur-sm">
@@ -44,12 +48,22 @@ export function Header() {
         </nav>
 
         {/* Right section: Cart + Mobile toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link
+            href={accountHref}
+            className="rounded-full px-3 py-2 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-primary sm:text-sm"
+          >
+            {accountLabel}
+          </Link>
           {/* Cart Icon */}
           <Link
             href="/cart"
             className="relative flex items-center justify-center rounded-full p-2 text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-primary"
-            aria-label={`Shopping cart with ${totalItems} items`}
+            aria-label={
+              ready
+                ? `Shopping cart with ${totalItems} items`
+                : "Shopping cart"
+            }
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +80,7 @@ export function Header() {
                 d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
               />
             </svg>
-            {totalItems > 0 && (
+            {ready && totalItems > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-2xs font-bold text-white">
                 {totalItems > 99 ? "99+" : totalItems}
               </span>
@@ -139,6 +153,15 @@ export function Header() {
             aria-label="Mobile navigation"
           >
             <ul className="flex flex-col p-6 gap-1">
+              <li>
+                <Link
+                  href={accountHref}
+                  className="block rounded-lg px-4 py-3 text-base font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {accountLabel}
+                </Link>
+              </li>
               {navLinks.map((link) => (
                 <li key={link.href}>
                   <Link

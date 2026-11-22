@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { AccountProvider } from "@/lib/account-context";
 import { CartProvider } from "@/lib/cart-context";
+import { StoreChrome } from "@/components/layout/StoreChrome";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -14,15 +14,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Jummip | Premium Garments",
   description:
-    "Discover premium quality garments for men, women and kids at Jummip. Style meets comfort with our curated collection of clothing and accessories.",
+    "Shop women’s t-shirts, nightsuits and undergarments at Jummip. Soft cotton, everyday comfort.",
   keywords: [
+    "womens t-shirts",
+    "nightsuits",
+    "undergarments",
+    "cotton wear",
     "garments",
-    "clothing",
-    "fashion",
-    "mens wear",
-    "womens wear",
-    "kids wear",
-    "premium",
     "India",
   ],
 };
@@ -35,11 +33,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <CartProvider>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-        </CartProvider>
+        <AccountProvider>
+          <CartProvider>
+            <StoreChrome>{children}</StoreChrome>
+          </CartProvider>
+        </AccountProvider>
       </body>
     </html>
   );

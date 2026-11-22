@@ -1,6 +1,6 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { products, getProductsByCategory } from '@/data/products';
+import { fetchProduct, fetchProducts, productsForCategory } from '@/lib/catalogue';
 import { ProductDetailView } from '@/components/product/ProductDetailView';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -11,12 +11,10 @@ interface ProductPageProps {
   };
 }
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
+export const dynamic = 'force-dynamic';
 
-export function generateMetadata({ params }: ProductPageProps) {
-  const product = products.find((p) => p.slug === params.slug);
+export async function generateMetadata({ params }: ProductPageProps) {
+  const product = await fetchProduct(params.slug);
   if (!product) return { title: 'Product Not Found | Jummip' };
 
   return {
@@ -30,15 +28,14 @@ export function generateMetadata({ params }: ProductPageProps) {
   };
 }
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = products.find((p) => p.slug === params.slug);
+export default async function ProductPage({ params }: ProductPageProps) {
+  const product = await fetchProduct(params.slug);
 
   if (!product || !product.isActive) {
     notFound();
   }
 
-  // Related products from same category
-  const related = getProductsByCategory(product.categorySlug)
+  const related = productsForCategory(await fetchProducts(), product.categorySlug)
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 

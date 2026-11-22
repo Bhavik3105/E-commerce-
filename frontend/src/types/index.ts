@@ -28,6 +28,7 @@ export interface Product {
   salePrice?: number;   // in paise
   variants: ProductVariant[];
   isActive: boolean;
+  showOnHome?: boolean;
   seoTitle?: string;
   seoDescription?: string;
   createdAt: string;

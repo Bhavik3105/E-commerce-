@@ -1,6 +1,5 @@
 import React from 'react';
-import { products } from '@/data/products';
-import { categories } from '@/data/categories';
+import { fetchCategories, fetchProducts } from '@/lib/catalogue';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { CategoryNav } from '@/components/category/CategoryNav';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -12,13 +11,16 @@ interface ProductsPageProps {
   };
 }
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'All Products | Jummip Garments',
-  description: 'Browse all garments in our store: men, women, kids apparel and accessories.',
+  description: 'Browse every Jummip collection, including t-shirts, nightsuits, undergarments and izaars.',
 };
 
-export default function ProductsPage({ searchParams }: ProductsPageProps) {
-  const filtered = [...products].filter((p) => p.isActive);
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
+  const filtered = products.filter((p) => p.isActive);
 
   // Sorting
   if (searchParams?.sort === 'price-low') {
@@ -36,7 +38,7 @@ export default function ProductsPage({ searchParams }: ProductsPageProps) {
           All Products
         </h1>
         <p className="text-sm text-neutral-500 max-w-2xl">
-          Discover our full collection of thoughtfully designed clothing made from natural fibers and crafted for long-lasting wear.
+          Shop every Jummip collection, made in soft cotton for everyday comfort.
         </p>
 
         <div className="pt-2">
@@ -44,27 +46,27 @@ export default function ProductsPage({ searchParams }: ProductsPageProps) {
         </div>
       </div>
 
-      <div className="flex justify-between items-center text-xs text-neutral-500 pb-2 border-b border-neutral-200">
-        <span>Showing {filtered.length} products</span>
-        <div className="flex items-center gap-2">
-          <span>Sort by:</span>
+      <div className="flex flex-col gap-2 text-xs text-neutral-500 pb-2 border-b border-neutral-200 sm:flex-row sm:items-center sm:justify-between">
+        <span className="whitespace-nowrap">Showing {filtered.length} products</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="whitespace-nowrap">Sort by:</span>
           <a
             href="/products"
-            className="hover:text-primary-600 font-medium underline-offset-4 hover:underline"
+            className="whitespace-nowrap hover:text-primary-600 font-medium underline-offset-4 hover:underline"
           >
             Featured
           </a>
-          <span>•</span>
+          <span aria-hidden="true">•</span>
           <a
             href="/products?sort=price-low"
-            className="hover:text-primary-600 font-medium underline-offset-4 hover:underline"
+            className="whitespace-nowrap hover:text-primary-600 font-medium underline-offset-4 hover:underline"
           >
             Price: Low to High
           </a>
-          <span>•</span>
+          <span aria-hidden="true">•</span>
           <a
             href="/products?sort=price-high"
-            className="hover:text-primary-600 font-medium underline-offset-4 hover:underline"
+            className="whitespace-nowrap hover:text-primary-600 font-medium underline-offset-4 hover:underline"
           >
             Price: High to Low
           </a>
@@ -73,7 +75,7 @@ export default function ProductsPage({ searchParams }: ProductsPageProps) {
 
       <ProductGrid
         products={filtered}
-        emptyMessage="No products found in this collection."
+        emptyMessage="No products yet. They will be added from the dashboard."
       />
     </div>
   );

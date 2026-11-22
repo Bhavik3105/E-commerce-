@@ -3,9 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useAccount } from '@/lib/account-context';
 import { formatPrice } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface StoredOrderItem {
   productId: string;
@@ -13,7 +16,7 @@ interface StoredOrderItem {
   productImage: string;
   size: string;
   colour: string;
-  price: number;
+  priceAtPurchase: number;
   quantity: number;
 }
 
@@ -43,45 +46,48 @@ interface StoredOrder {
 
 export default function OrderStatusPage() {
   const params = useParams();
+  const router = useRouter();
+  const { ready, token } = useAccount();
   const orderId = params?.id as string;
   const [order, setOrder] = useState<StoredOrder | null>(null);
   const [loading, setLoading] = useState(true);
-  const [simulatedPaid, setSimulatedPaid] = useState(false);
+  const [missing, setMissing] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && orderId) {
-      const stored = localStorage.getItem(`order_${orderId}`);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setOrder(parsed);
-          if (parsed.paymentStatus === 'paid') {
-            setSimulatedPaid(true);
-          }
-        } catch (e) {
-          console.error(e);
+    if (!orderId || !ready) return;
+    if (!token) {
+      router.replace(`/login?next=${encodeURIComponent(`/order/${orderId}/status`)}`);
+      return;
+    }
+    let active = true;
+    fetch(`${apiBase}/api/orders/${orderId}`, {
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (response) => {
+        if (response.status === 401) {
+          router.replace(`/login?next=${encodeURIComponent(`/order/${orderId}/status`)}`);
+          return 'auth' as const;
         }
-      }
-      setLoading(false);
-    }
-  }, [orderId]);
-
-  const handleSimulatePaymentSuccess = () => {
-    if (order) {
-      const updated = {
-        ...order,
-        paymentStatus: 'paid',
-        orderStatus: 'confirmed',
-        shipmentStatus: 'not_shipped',
-        paidAt: new Date().toISOString(),
-      };
-      setOrder(updated);
-      setSimulatedPaid(true);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`order_${orderId}`, JSON.stringify(updated));
-      }
-    }
-  };
+        if (!response.ok) return null;
+        const body = (await response.json()) as { data?: StoredOrder };
+        return body.data ?? null;
+      })
+      .then((data) => {
+        if (!active || data === 'auth') return;
+        setOrder(data);
+        setMissing(!data);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setMissing(true);
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [orderId, ready, token, router]);
 
   if (loading) {
     return (
@@ -91,7 +97,25 @@ export default function OrderStatusPage() {
     );
   }
 
-  const isPaid = simulatedPaid || order?.paymentStatus === 'paid';
+  if (missing || !order) {
+    return (
+      <div className="container py-16 max-w-xl text-center space-y-4">
+        <h1 className="text-2xl font-bold text-neutral-900">Order not found</h1>
+        <p className="text-sm text-neutral-500">Check the order number, or return to the shop.</p>
+        <Link href="/products" className="inline-flex px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-primary-600">
+          Continue shopping
+        </Link>
+      </div>
+    );
+  }
+
+  const isPaid = order.paymentStatus === 'paid';
+  const delivery =
+    order.shipmentStatus === 'delivered'
+      ? 'Delivered'
+      : order.shipmentStatus === 'shipped'
+        ? 'Shipped'
+        : 'Preparing to ship';
 
   return (
     <div className="container py-8 max-w-3xl space-y-8">
@@ -111,8 +135,9 @@ export default function OrderStatusPage() {
               Thank You for Your Order!
             </h1>
             <p className="text-sm text-neutral-600 max-w-md mx-auto">
-              We have received your payment. A confirmation email has been sent to{' '}
-              <strong className="text-neutral-900">{order?.customer?.email || 'your email'}</strong>.
+              Payment is confirmed for{' '}
+              <strong className="text-neutral-900">{order.customer?.email || 'this order'}</strong>.
+              Delivery status: <strong>{delivery}</strong>. You can open this order again from your account.
             </p>
           </>
         ) : (
@@ -129,25 +154,8 @@ export default function OrderStatusPage() {
               Order #{orderId}
             </h1>
             <p className="text-sm text-neutral-600 max-w-md mx-auto">
-              Your order is recorded and waiting for payment verification.
+              This order was not paid. Nothing was charged. You can place it again from your cart.
             </p>
-
-            {/* Test Simulation Button for Phase 1 preview */}
-            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 max-w-md mx-auto text-left space-y-2">
-              <p className="text-xs font-semibold text-amber-900">
-                ⚡ Phase 1 UI Verification Control
-              </p>
-              <p className="text-xs text-amber-800">
-                In Phase 4, Razorpay Checkout will automatically handle real payment verification. Click below to preview the verified/paid order layout:
-              </p>
-              <button
-                type="button"
-                onClick={handleSimulatePaymentSuccess}
-                className="w-full py-2 px-4 rounded-lg text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 transition-colors"
-              >
-                Simulate Successful Razorpay Payment
-              </button>
-            </div>
           </>
         )}
       </div>
@@ -163,7 +171,7 @@ export default function OrderStatusPage() {
             <span className="text-xs text-neutral-400">Status</span>
             <div>
               <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
-                {isPaid ? 'Confirmed / Processing' : 'Pending Payment'}
+                {isPaid ? delivery : 'Pending Payment'}
               </span>
             </div>
           </div>
@@ -207,6 +215,7 @@ export default function OrderStatusPage() {
                     fill
                     sizes="48px"
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <div className="flex-1 min-w-0 text-xs sm:text-sm">
@@ -216,7 +225,7 @@ export default function OrderStatusPage() {
                   </p>
                 </div>
                 <div className="font-semibold text-neutral-900 text-sm">
-                  {formatPrice(item.price * item.quantity)}
+                  {formatPrice(item.priceAtPurchase * item.quantity)}
                 </div>
               </div>
             )) || (
@@ -252,12 +261,20 @@ export default function OrderStatusPage() {
 
       {/* ─── Next Steps / Actions ─── */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-4">
-        <Link
-          href="/products"
-          className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-colors"
-        >
-          Continue Shopping
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/account"
+            className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-colors"
+          >
+            Your orders
+          </Link>
+          <Link
+            href="/products"
+            className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold text-neutral-800 border border-neutral-300 hover:bg-neutral-50 transition-colors"
+          >
+            Continue Shopping
+          </Link>
+        </div>
         <Link
           href="/contact"
           className="text-xs text-neutral-500 hover:text-neutral-800"

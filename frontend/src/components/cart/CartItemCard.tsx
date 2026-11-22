@@ -37,6 +37,7 @@ export function CartItemCard({ item }: CartItemCardProps) {
           fill
           sizes="96px"
           className="object-cover"
+          unoptimized
         />
       </Link>
 

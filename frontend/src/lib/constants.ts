@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: 'Jummip',
-  description: 'Premium quality garments for men, women and kids.',
+  description: 'Women’s t-shirts, nightsuits and undergarments in soft everyday cotton.',
   tagline: 'Style Meets Comfort',
   url: 'https://jummip.com', // Update in production
   contact: {
@@ -18,10 +18,7 @@ export const siteConfig = {
 
 export const navLinks = [
   { label: 'Home', href: '/' },
-  { label: 'Products', href: '/products' },
-  { label: "Men's", href: '/category/mens-wear' },
-  { label: "Women's", href: '/category/womens-wear' },
-  { label: "Kids'", href: '/category/kids-wear' },
+  { label: 'Shop All', href: '/products' },
   { label: 'About Us', href: '/about' },
   { label: 'Blog', href: '/blog' },
   { label: 'Contact Us', href: '/contact' },
@@ -29,10 +26,9 @@ export const navLinks = [
 
 export const footerLinks = {
   shop: [
-    { label: "Men's Wear", href: '/category/mens-wear' },
-    { label: "Women's Wear", href: '/category/womens-wear' },
-    { label: "Kids' Wear", href: '/category/kids-wear' },
-    { label: 'Accessories', href: '/category/accessories' },
+    { label: 'T-Shirts', href: '/category/tshirts' },
+    { label: 'Nightsuits', href: '/category/nightsuits' },
+    { label: 'Undergarments', href: '/category/undergarments' },
   ],
   support: [
     { label: 'About Us', href: '/about' },

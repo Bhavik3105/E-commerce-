@@ -26,7 +26,7 @@ const blogPosts: BlogPost[] = [
     title: 'How to Care for 100% Combed Cotton Garments for Long-Lasting Softness',
     slug: 'how-to-care-for-cotton-garments',
     excerpt:
-      'Learn the best washing temperatures, drying habits, and ironing secrets to keep your cotton shirts, kurtis, and t-shirts looking brand new year after year.',
+      'Learn the best washing temperatures, drying habits, and ironing secrets to keep cotton tees and nightsuits soft.',
     category: 'Garment Care',
     readTime: '4 min read',
     date: 'October 24, 2026',
@@ -34,36 +34,14 @@ const blogPosts: BlogPost[] = [
   },
   {
     id: 'post-2',
-    title: 'The Ultimate Guide to Men’s Smart Casual: Balancing Comfort and Style',
-    slug: 'mens-smart-casual-guide',
+    title: 'How to Choose a Cotton Nightsuit That Stays Comfortable All Night',
+    slug: 'choosing-a-cotton-nightsuit',
     excerpt:
-      'From classic cotton button-downs paired with stretch chinos to breathable crewnecks, master the art of effortless smart-casual dressing for work and weekend outings.',
-    category: 'Style Guide',
-    readTime: '5 min read',
-    date: 'October 18, 2026',
-    imageUrl: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=600&h=400&fit=crop',
-  },
-  {
-    id: 'post-3',
-    title: 'Ethnic Elegance: How to Style Embroidered Kurtis for Festive Gatherings',
-    slug: 'styling-embroidered-kurtis',
-    excerpt:
-      'Discover versatile ways to pair floral embroidered kurtis with palazzos, statement dupattas, and classic footwear for weddings, festivities, or family dinners.',
-    category: 'Women’s Fashion',
+      'What to look for in a women’s nightsuit: breathable cotton, a relaxed fit, and a waistband that stays comfortable after washing.',
+    category: 'Sleepwear',
     readTime: '6 min read',
     date: 'October 12, 2026',
     imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&h=400&fit=crop',
-  },
-  {
-    id: 'post-4',
-    title: 'Choosing Kids’ Clothes That Combine Fun, Safety, and Maximum Durability',
-    slug: 'choosing-kids-clothing-durability',
-    excerpt:
-      'Active kids need gentle, chemical-free cotton fabrics that endure playground adventures and frequent laundering without losing their vibrant colors.',
-    category: 'Kids & Family',
-    readTime: '4 min read',
-    date: 'October 05, 2026',
-    imageUrl: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=600&h=400&fit=crop',
   },
 ];
 

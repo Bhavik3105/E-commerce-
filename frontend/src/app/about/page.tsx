@@ -120,7 +120,7 @@ export default function AboutPage() {
             Experience the Jummip Difference
           </h2>
           <p className="text-sm text-primary-100 max-w-xl mx-auto">
-            Explore our curated collections across Men&apos;s, Women&apos;s, Kids&apos; Wear and Accessories.
+            Explore t-shirts, nightsuits and undergarments made for women.
           </p>
           <div className="pt-2 flex flex-wrap justify-center gap-4">
             <Link
@@ -141,3 +141,4 @@ export default function AboutPage() {
     </div>
   );
 }
+

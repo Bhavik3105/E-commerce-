@@ -51,14 +51,15 @@ export interface CheckoutFormData {
 interface CheckoutFormProps {
   onSubmit: (data: CheckoutFormData) => void;
   isLoading?: boolean;
+  account: CustomerInfo;
 }
 
-export function CheckoutForm({ onSubmit, isLoading = false }: CheckoutFormProps) {
+export function CheckoutForm({ onSubmit, isLoading = false, account }: CheckoutFormProps) {
   const [formData, setFormData] = useState<CheckoutFormData>({
     customer: {
-      name: '',
-      email: '',
-      phone: '',
+      name: account.name,
+      email: account.email,
+      phone: account.phone,
     },
     deliveryAddress: {
       line1: '',
@@ -165,20 +166,14 @@ export function CheckoutForm({ onSubmit, isLoading = false }: CheckoutFormProps)
             <input
               type="email"
               required
+              readOnly
               value={formData.customer.email}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  customer: { ...formData.customer, email: e.target.value },
-                })
-              }
-              placeholder="rahul@example.com"
-              className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-600"
             />
             {errors['customer.email'] && (
               <p className="mt-1 text-xs text-red-500">{errors['customer.email']}</p>
             )}
-            <p className="mt-1 text-[11px] text-neutral-400">Order confirmation will be sent here</p>
+            <p className="mt-1 text-[11px] text-neutral-400">Orders are saved to this account</p>
           </div>
 
           <div>
@@ -361,7 +356,7 @@ export function CheckoutForm({ onSubmit, isLoading = false }: CheckoutFormProps)
         disabled={isLoading}
         className="w-full py-4 px-6 rounded-lg font-semibold text-white bg-primary-600 hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-md disabled:opacity-50 text-base"
       >
-        {isLoading ? 'Processing Order...' : 'Place Order & Proceed to Pay'}
+        {isLoading ? 'Opening secure payment...' : 'Pay with Razorpay'}
       </button>
     </form>
   );

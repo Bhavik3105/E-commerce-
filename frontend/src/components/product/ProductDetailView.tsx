@@ -146,17 +146,12 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
           )}
 
           {/* Stock & Quantity */}
-          <div className="flex items-center gap-6">
-            <div>
-              <span className="block text-xs font-medium text-neutral-700 mb-1.5">
-                Quantity
-              </span>
-              <QuantitySelector
-                quantity={quantity}
-                maxQuantity={Math.max(1, currentStock)}
-                onChange={setQuantity}
-              />
-            </div>
+          <div className="flex flex-wrap items-center gap-6">
+            <QuantitySelector
+              quantity={quantity}
+              maxQuantity={Math.max(1, currentStock)}
+              onChange={setQuantity}
+            />
 
             <div className="pt-5">
               {isOutOfStock ? (

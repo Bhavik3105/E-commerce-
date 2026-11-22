@@ -1,64 +1,31 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { products, getSaleProducts } from '@/data/products';
-import { categories } from '@/data/categories';
+import { fetchCategories, fetchProducts, homeProducts } from '@/lib/catalogue';
+import { getDiscountPercent } from '@/lib/utils';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { CategoryCard } from '@/components/category/CategoryCard';
+import { HeroSlider } from '@/components/home/HeroSlider';
+import { Testimonials } from '@/components/home/Testimonials';
+import { InstagramReels } from '@/components/home/InstagramReels';
 
-export default function HomePage() {
-  const featuredProducts = products.slice(0, 4);
-  const saleProducts = getSaleProducts().slice(0, 4);
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage() {
+  const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
+  const saleProducts = products.filter((product) => product.salePrice && product.isActive).slice(0, 4);
+  const maxSalePercent = saleProducts.reduce((max, product) => {
+    if (!product.salePrice) return max;
+    return Math.max(max, getDiscountPercent(product.price, product.salePrice));
+  }, 0);
 
   return (
-    <div className="space-y-16 pb-16">
-      {/* ─── Hero Section ─── */}
-      <section className="relative bg-neutral-900 text-white min-h-[520px] md:min-h-[600px] flex items-center overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&h=900&fit=crop"
-            alt="Jummip Autumn Collection"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover opacity-40 mix-blend-overlay"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/90 via-neutral-950/60 to-transparent" />
-        </div>
-
-        <div className="container relative z-10 py-16 md:py-24">
-          <div className="max-w-xl space-y-6">
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-primary-500/20 text-primary-300 border border-primary-500/30">
-              New Season Arrivals
-            </span>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-white">
-              Wear Your <br />
-              <span className="text-primary-400">Elegance</span> Every Day.
-            </h1>
-            <p className="text-base sm:text-lg text-neutral-300 font-normal leading-relaxed">
-              Carefully tailored garments handcrafted with breathable, premium fabrics. Built for timeless style and effortless comfort.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Link
-                href="/products"
-                className="inline-flex items-center justify-center px-6 py-3.5 rounded-lg text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-colors shadow-lg shadow-primary-900/20"
-              >
-                Shop All Collection
-              </Link>
-              <Link
-                href="/category/mens-wear"
-                className="inline-flex items-center justify-center px-6 py-3.5 rounded-lg text-sm font-semibold text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors border border-white/20"
-              >
-                Explore Men&apos;s
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="pb-16">
+      <HeroSlider />
 
       {/* ─── Value Propositions ─── */}
-      <section className="container">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 rounded-2xl bg-white border border-neutral-200/80 shadow-sm">
-          <div className="flex items-center gap-3">
+      <section className="w-full bg-white border-b border-neutral-200">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-5 px-4 py-5 sm:px-8 lg:px-12">
+          <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -66,11 +33,11 @@ export default function HomePage() {
             </div>
             <div>
               <h4 className="text-xs sm:text-sm font-semibold text-neutral-900">Free Delivery</h4>
-              <p className="text-[11px] sm:text-xs text-neutral-500">On all orders above ₹999</p>
+              <p className="text-[11px] sm:text-xs leading-tight text-neutral-500">Orders above ₹999</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -78,11 +45,11 @@ export default function HomePage() {
             </div>
             <div>
               <h4 className="text-xs sm:text-sm font-semibold text-neutral-900">100% Cotton</h4>
-              <p className="text-[11px] sm:text-xs text-neutral-500">Breathable & durable</p>
+              <p className="text-[11px] sm:text-xs leading-tight text-neutral-500">Breathable cotton</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -90,11 +57,11 @@ export default function HomePage() {
             </div>
             <div>
               <h4 className="text-xs sm:text-sm font-semibold text-neutral-900">Easy Returns</h4>
-              <p className="text-[11px] sm:text-xs text-neutral-500">7-day replacement policy</p>
+              <p className="text-[11px] sm:text-xs leading-tight text-neutral-500">7-day replacement</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -102,12 +69,13 @@ export default function HomePage() {
             </div>
             <div>
               <h4 className="text-xs sm:text-sm font-semibold text-neutral-900">Secure Payments</h4>
-              <p className="text-[11px] sm:text-xs text-neutral-500">Powered by Razorpay</p>
+              <p className="text-[11px] sm:text-xs leading-tight text-neutral-500">Via Razorpay</p>
             </div>
           </div>
         </div>
       </section>
 
+      <div className="space-y-16 pt-16">
       {/* ─── Shop By Category ─── */}
       <section className="container space-y-6">
         <div className="flex justify-between items-end">
@@ -115,7 +83,7 @@ export default function HomePage() {
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
               Shop by Category
             </h2>
-            <p className="text-sm text-neutral-500 mt-1">Explore our wide selection of hand-picked styles</p>
+            <p className="text-sm text-neutral-500 mt-1">{categories.map((category) => category.name).join(', ')}</p>
           </div>
           <Link
             href="/products"
@@ -125,34 +93,38 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {categories.map((cat) => (
             <CategoryCard key={cat.id} category={cat} />
           ))}
         </div>
       </section>
 
-      {/* ─── Featured Products ─── */}
-      <section className="container space-y-6">
-        <div className="flex justify-between items-end">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
-              Featured Arrivals
-            </h2>
-            <p className="text-sm text-neutral-500 mt-1">Curated picks for modern wardrobes</p>
-          </div>
-          <Link
-            href="/products"
-            className="text-xs sm:text-sm font-semibold text-primary-700 hover:text-primary-800 transition-colors"
-          >
-            Explore More &rarr;
-          </Link>
-        </div>
+      {categories.map((collection) => {
+        const collectionProducts = homeProducts(products, collection.slug);
+        if (collectionProducts.length === 0) return null;
 
-        <ProductGrid products={featuredProducts} />
-      </section>
+        return (
+          <section key={collection.slug} className="container space-y-6">
+            <div className="flex justify-between items-end gap-4">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
+                {collection.name} Collection
+              </h2>
+              <Link
+                href={`/category/${collection.slug}`}
+                className="text-xs sm:text-sm font-semibold text-primary-700 hover:text-primary-800 transition-colors whitespace-nowrap"
+              >
+                View All &rarr;
+              </Link>
+            </div>
+            <ProductGrid products={collectionProducts} />
+          </section>
+        );
+      })}
 
-      {/* ─── Special Offer Banner ─── */}
+      <InstagramReels />
+
+      {saleProducts.length > 0 && (
       <section className="container">
         <div className="relative rounded-2xl overflow-hidden bg-primary-900 text-white p-8 sm:p-12 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-4 max-w-xl text-center md:text-left">
@@ -160,7 +132,7 @@ export default function HomePage() {
               Limited Time Deals
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-              Up to 30% Off on Selected Styles
+              Up to {maxSalePercent}% Off on Selected Styles
             </h2>
             <p className="text-sm sm:text-base text-primary-200">
               Upgrade your seasonal wardrobe with premium fabrics at unbeatable prices. Shop the sale before stocks run out.
@@ -188,6 +160,7 @@ export default function HomePage() {
                     fill
                     sizes="176px"
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <h5 className="text-xs font-medium text-white truncate">{item.name}</h5>
@@ -199,6 +172,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ─── On Sale Collection ─── */}
       {saleProducts.length > 0 && (
@@ -221,6 +195,9 @@ export default function HomePage() {
           <ProductGrid products={saleProducts} />
         </section>
       )}
+
+      <Testimonials />
+      </div>
     </div>
   );
 }

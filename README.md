@@ -25,9 +25,15 @@ Runs on http://localhost:3000
 ```bash
 cd backend
 npm install
+copy .env.example .env
+```
+Put the MongoDB connection string in `backend/.env` as `MONGODB_URI`. Do not commit that file.
+
+```bash
+npm run seed
 npm run dev
 ```
-Runs on http://localhost:5000
+Runs on http://localhost:5000. `GET /health` reports whether the database is connected.
 
 ## Tech Stack
 

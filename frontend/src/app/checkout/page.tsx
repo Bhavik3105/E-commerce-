@@ -1,58 +1,169 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useAccount } from '@/lib/account-context';
 import { useCart } from '@/lib/cart-context';
 import { CheckoutForm, CheckoutFormData } from '@/components/checkout/CheckoutForm';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatPrice } from '@/lib/utils';
+import { loadRazorpay, type RazorpaySuccess } from '@/lib/razorpay';
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+type PaymentSession = {
+  keyId: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  checkoutToken: string;
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, ready } = useCart();
+  const { customer, ready: accountReady, token } = useAccount();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!accountReady) return;
+    if (!customer) router.replace('/login?next=/checkout');
+  }, [accountReady, customer, router]);
 
   const freeShippingThreshold = 99900;
   const isFreeShipping = totalPrice >= freeShippingThreshold;
-  const shippingCharge = isFreeShipping ? 0 : 9900;
+  const shippingCharge = isFreeShipping ? 0 : 200;
   const grandTotal = totalPrice + shippingCharge;
 
   const handleFormSubmit = async (formData: CheckoutFormData) => {
     setIsSubmitting(true);
+    setError('');
 
-    try {
-      // In Phase 1 (frontend mockup):
-      // Store checkout order in session/localStorage to show realistic status page
-      const mockOrderNumber = `JMP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const orderData = {
-        orderNumber: mockOrderNumber,
+    if (!token) {
+      router.replace('/login?next=/checkout');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const response = await fetch(`${apiBase}/api/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
         customer: formData.customer,
         deliveryAddress: formData.deliveryAddress,
-        items,
-        subtotal: totalPrice,
-        shipping: shippingCharge,
-        total: grandTotal,
-        paymentStatus: 'pending',
-        orderStatus: 'pending',
-        createdAt: new Date().toISOString(),
-      };
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`order_${mockOrderNumber}`, JSON.stringify(orderData));
-      }
-
-      // Clear cart
-      clearCart();
-
-      // Navigate to order status page
-      router.push(`/order/${mockOrderNumber}/status`);
-    } catch (err) {
-      console.error('Checkout error:', err);
+        notes: formData.notes,
+        items: items.map((item) => ({
+          productId: item.productId,
+          size: item.size,
+          colour: item.colour,
+          quantity: item.quantity,
+        })),
+      }),
+    });
+    const body = (await response.json().catch(() => ({}))) as {
+      message?: string;
+      data?: { orderNumber: string };
+      payment?: PaymentSession;
+    };
+    if (response.status === 401) {
+      router.replace('/login?next=/checkout');
       setIsSubmitting(false);
+      return;
     }
+    if (!response.ok || !body.data || !body.payment) {
+      setError(body.message || 'The order could not be started.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const readyToPay = await loadRazorpay();
+    if (!readyToPay || !window.Razorpay) {
+      await fetch(`${apiBase}/api/orders/${body.data.orderNumber}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkoutToken: body.payment.checkoutToken }),
+      });
+      setError('Razorpay could not be opened. Nothing was charged.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const payment = body.payment;
+    const orderNumber = body.data.orderNumber;
+    let finished = false;
+    const checkout = new window.Razorpay({
+      key: payment.keyId,
+      amount: payment.amount,
+      currency: payment.currency,
+      name: 'Jummip',
+      description: `Order ${orderNumber}`,
+      order_id: payment.orderId,
+      prefill: {
+        name: formData.customer.name,
+        email: formData.customer.email,
+        contact: formData.customer.phone,
+      },
+      theme: { color: '#0d8428' },
+      handler: (result: RazorpaySuccess) => {
+        finished = true;
+        void confirmPayment(orderNumber, payment.checkoutToken, result);
+      },
+      modal: {
+        ondismiss: () => {
+          if (finished) return;
+          void cancelPayment(orderNumber, payment.checkoutToken);
+        },
+      },
+    });
+    checkout.open();
   };
+
+  async function confirmPayment(orderNumber: string, checkoutToken: string, result: RazorpaySuccess) {
+    const response = await fetch(`${apiBase}/api/orders/${orderNumber}/payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        checkoutToken,
+        razorpayOrderId: result.razorpay_order_id,
+        razorpayPaymentId: result.razorpay_payment_id,
+        razorpaySignature: result.razorpay_signature,
+      }),
+    });
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    if (!response.ok) {
+      setError(body.message || `Payment was received for ${orderNumber}, but it could not be confirmed. Contact the store with this order number.`);
+      setIsSubmitting(false);
+      return;
+    }
+    clearCart();
+    router.push(`/order/${orderNumber}/status`);
+  }
+
+  async function cancelPayment(orderNumber: string, checkoutToken: string) {
+    await fetch(`${apiBase}/api/orders/${orderNumber}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checkoutToken }),
+    });
+    setError('Payment was not completed. Your cart is still here, and nothing was charged.');
+    setIsSubmitting(false);
+  }
+
+  if (!ready || !accountReady || !customer) {
+    return (
+      <div className="container py-8">
+        <Breadcrumb items={[{ label: 'Checkout' }]} />
+        <LoadingSpinner size="lg" label="Checking your account..." />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -82,14 +193,18 @@ export default function CheckoutPage() {
           Secure Checkout
         </h1>
         <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-          Complete your customer and delivery details to place your garment order.
+          Signed in as {customer.email}. After payment, this order stays on your account with its delivery status.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Checkout Form */}
         <div className="lg:col-span-7">
-          <CheckoutForm onSubmit={handleFormSubmit} isLoading={isSubmitting} />
+          <CheckoutForm
+            onSubmit={handleFormSubmit}
+            isLoading={isSubmitting}
+            account={{ name: customer.name, email: customer.email, phone: customer.phone }}
+          />
         </div>
 
         {/* Order Review Sidebar */}
@@ -116,6 +231,7 @@ export default function CheckoutPage() {
                       fill
                       sizes="48px"
                       className="object-cover"
+                      unoptimized
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -155,11 +271,11 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Notice about Phase 1 test mode */}
             <div className="p-3 bg-neutral-50 rounded-lg border border-neutral-200 text-[11px] text-neutral-500">
-              <p className="font-medium text-neutral-700 mb-0.5">ℹ️ Phase 1 Preview Mode</p>
-              Submitting this form records the order locally and navigates to the payment & order status screen. Real Razorpay checkout will be wired up in Phase 4.
+              <p className="font-medium text-neutral-700 mb-0.5">Pay with Razorpay</p>
+              Cards, UPI, and netbanking open in Razorpay. Jummip does not store card numbers.
             </div>
+            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
           </div>
         </div>
       </div>

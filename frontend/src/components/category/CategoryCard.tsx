@@ -20,6 +20,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-90"
+          unoptimized
         />
       ) : (
         <div className="w-full h-full bg-neutral-200" />

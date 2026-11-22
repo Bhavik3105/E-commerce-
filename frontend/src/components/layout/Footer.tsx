@@ -1,9 +1,29 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import { siteConfig, footerLinks } from "@/lib/constants";
 
+const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const [shopLinks, setShopLinks] = useState<{ label: string; href: string }[]>([...footerLinks.shop]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${apiBase}/api/categories`, { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { data?: { name: string; slug: string }[] } | null) => {
+        if (!active || !body?.data?.length) return;
+        setShopLinks(body.data.map((category) => ({ label: category.name, href: `/category/${category.slug}` })));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <footer className="border-t border-neutral-200 bg-white">
@@ -59,7 +79,7 @@ export function Footer() {
               Shop
             </h3>
             <ul className="mt-4 space-y-2.5">
-              {footerLinks.shop.map((link) => (
+              {shopLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

@@ -5,6 +5,7 @@ import {
   useContext,
   useReducer,
   useEffect,
+  useState,
   type ReactNode,
 } from "react";
 import type { CartItem } from "@/types";
@@ -113,6 +114,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 // ─── Context ─────────────────────────────────────────────────────
 
 interface CartContextValue extends CartState {
+  ready: boolean;
   addItem: (item: CartItem) => void;
   removeItem: (productId: string, size: string, colour: string) => void;
   updateQuantity: (productId: string, size: string, colour: string, quantity: number) => void;
@@ -151,19 +153,22 @@ function saveCartToStorage(items: CartItem[]) {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [ready, setReady] = useState(false);
 
-  // Load cart from localStorage on mount
+  // Load the saved cart before any write. Writing the empty first render
+  // would wipe a cart that was already in storage.
   useEffect(() => {
     const savedItems = loadCartFromStorage();
     if (savedItems.length > 0) {
       dispatch({ type: "LOAD_CART", payload: savedItems });
     }
+    setReady(true);
   }, []);
 
-  // Save cart to localStorage on every change (skip initial empty state before load)
   useEffect(() => {
+    if (!ready) return;
     saveCartToStorage(state.items);
-  }, [state.items]);
+  }, [ready, state.items]);
 
   const addItem = (item: CartItem) => {
     dispatch({ type: "ADD_ITEM", payload: item });
@@ -183,6 +188,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value: CartContextValue = {
     ...state,
+    ready,
     addItem,
     removeItem,
     updateQuantity,

@@ -1,7 +1,6 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { categories } from '@/data/categories';
-import { getProductsByCategory } from '@/data/products';
+import { fetchCategories, fetchProducts, productsForCategory } from '@/lib/catalogue';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { CategoryNav } from '@/components/category/CategoryNav';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -12,12 +11,11 @@ interface CategoryPageProps {
   };
 }
 
-export function generateStaticParams() {
-  return categories.map((c) => ({ slug: c.slug }));
-}
+export const dynamic = 'force-dynamic';
 
-export function generateMetadata({ params }: CategoryPageProps) {
-  const category = categories.find((c) => c.slug === params.slug);
+export async function generateMetadata({ params }: CategoryPageProps) {
+  const categories = await fetchCategories();
+  const category = categories.find((item) => item.slug === params.slug);
   if (!category) return { title: 'Category Not Found | Jummip' };
 
   return {
@@ -26,14 +24,15 @@ export function generateMetadata({ params }: CategoryPageProps) {
   };
 }
 
-export default function CategoryPage({ params }: CategoryPageProps) {
-  const category = categories.find((c) => c.slug === params.slug);
+export default async function CategoryPage({ params }: CategoryPageProps) {
+  const categories = await fetchCategories();
+  const category = categories.find((item) => item.slug === params.slug);
 
   if (!category) {
     notFound();
   }
 
-  const categoryProducts = getProductsByCategory(category.slug);
+  const categoryProducts = productsForCategory(await fetchProducts(), category.slug);
 
   return (
     <div className="container py-6 space-y-8">
@@ -61,9 +60,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
       <ProductGrid
         products={categoryProducts}
-        emptyMessage={`No items currently available in ${category.name}. Check back soon!`}
+        emptyMessage={`No products in ${category.name} yet. They will be added from the dashboard.`}
       />
     </div>
   );
 }
-

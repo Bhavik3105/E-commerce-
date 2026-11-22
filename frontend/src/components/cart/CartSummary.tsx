@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useAccount } from '@/lib/account-context';
 import { useCart } from '@/lib/cart-context';
 import { formatPrice } from '@/lib/utils';
 
@@ -11,11 +12,13 @@ interface CartSummaryProps {
 
 export function CartSummary({ showCheckoutButton = true }: CartSummaryProps) {
   const { totalItems, totalPrice } = useCart();
+  const { customer, ready } = useAccount();
+  const signedOut = ready && !customer;
 
   // Free shipping threshold: ₹999 (99900 paise)
   const freeShippingThreshold = 99900;
   const isFreeShipping = totalPrice >= freeShippingThreshold || totalPrice === 0;
-  const shippingCharge = isFreeShipping ? 0 : 9900; // ₹99
+  const shippingCharge = isFreeShipping ? 0 : 200; // ₹2
   const finalTotal = totalPrice + shippingCharge;
 
   return (
@@ -62,10 +65,10 @@ export function CartSummary({ showCheckoutButton = true }: CartSummaryProps) {
 
       {showCheckoutButton && (
         <Link
-          href="/checkout"
+          href={signedOut ? '/login?next=/checkout' : '/checkout'}
           className="w-full inline-flex items-center justify-center py-3.5 px-4 rounded-lg text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50"
         >
-          Proceed to Checkout
+          {signedOut ? 'Sign in to checkout' : 'Proceed to Checkout'}
         </Link>
       )}
 

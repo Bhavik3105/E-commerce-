@@ -17,7 +17,7 @@ export function CategoryNav({
   return (
     <nav
       aria-label="Category Navigation"
-      className={cn('flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none', className)}
+      className={cn('flex flex-wrap items-center gap-2', className)}
     >
       <Link
         href="/products"

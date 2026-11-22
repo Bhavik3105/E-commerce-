@@ -42,7 +42,7 @@ export default function ShippingPolicyPage() {
           <h2 className="text-base font-bold text-neutral-900">3. Shipping Charges</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Orders above ₹999:</strong> FREE Delivery across India</li>
-            <li><strong>Orders under ₹999:</strong> Flat ₹99 delivery charge</li>
+            <li><strong>Orders under ₹999:</strong> Flat ₹2 delivery charge</li>
           </ul>
         </section>
 

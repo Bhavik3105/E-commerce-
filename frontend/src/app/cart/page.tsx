@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 
 export default function CartPage() {
-  const { items, clearCart } = useCart();
+  const { items, clearCart, ready } = useCart();
 
   return (
     <div className="container py-6 space-y-6">
@@ -30,7 +30,7 @@ export default function CartPage() {
         )}
       </div>
 
-      {items.length === 0 ? (
+      {!ready ? null : items.length === 0 ? (
         <EmptyState
           title="Your cart is empty"
           message="Looks like you haven't added any garments to your cart yet. Explore our latest arrivals to get started!"

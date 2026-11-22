@@ -52,3 +52,5 @@ app.use('/api/admin', adminRouter);
 
 app.use(notFound);
 app.use(errorHandler);
+
+export default app;

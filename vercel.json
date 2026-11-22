@@ -3,7 +3,13 @@
   "services": {
     "backend": {
       "root": "backend",
-      "framework": "express"
+      "framework": "express",
+      "entrypoint": "src/app.ts",
+      "functions": {
+        "src/app.ts": {
+          "includeFiles": "node_modules/**"
+        }
+      }
     },
     "frontend": {
       "root": "frontend",

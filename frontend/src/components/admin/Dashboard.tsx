@@ -7,8 +7,7 @@ import type { Category, Product } from '@/types';
 import { formatPrice } from '@/lib/utils';
 import { pageSections } from '@/lib/dashboard';
 import { OrderDesk } from '@/components/admin/OrderDesk';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiBase } from '@/lib/api';
 const tokenKey = 'jummip-admin-token';
 
 type VariantDraft = { size: string; colour: string; colourHex: string; stock: string };
@@ -87,7 +86,7 @@ function PhotoField({
     onMessage('');
     const body = new FormData();
     body.append('photo', file);
-    const response = await fetch(`${apiBase}/api/admin/uploads`, {
+    const response = await fetch(`${apiBase()}/api/admin/uploads`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body,
@@ -177,7 +176,7 @@ export function Dashboard({ section }: { section: string }) {
 
   async function loadProducts(activeToken: string) {
     setLoading(true);
-    const response = await fetch(`${apiBase}/api/admin/products`, {
+    const response = await fetch(`${apiBase()}/api/admin/products`, {
       headers: { Authorization: `Bearer ${activeToken}` },
       cache: 'no-store',
     });
@@ -194,7 +193,7 @@ export function Dashboard({ section }: { section: string }) {
   }
 
   async function loadCollections() {
-    const response = await fetch(`${apiBase}/api/categories`, { cache: 'no-store' });
+    const response = await fetch(`${apiBase()}/api/categories`, { cache: 'no-store' });
     const body = (await response.json()) as { data?: Category[] };
     setCollections(body.data ?? []);
     setCollectionsReady(true);
@@ -221,7 +220,7 @@ export function Dashboard({ section }: { section: string }) {
   async function signIn(event: React.FormEvent) {
     event.preventDefault();
     setLoginError('');
-    const response = await fetch(`${apiBase}/api/admin/login`, {
+    const response = await fetch(`${apiBase()}/api/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
@@ -258,7 +257,7 @@ export function Dashboard({ section }: { section: string }) {
     if (!token) return;
     setSaving(true);
     setMessage('');
-    const response = await fetch(`${apiBase}/api/admin/categories`, {
+    const response = await fetch(`${apiBase()}/api/admin/categories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(collectionDraft),
@@ -285,7 +284,7 @@ export function Dashboard({ section }: { section: string }) {
         ? 'It has no products.'
         : `${count} ${count === 1 ? 'product' : 'products'} in it will also be removed from the store.`;
     if (!window.confirm(`Delete ${collection.name}? ${productNote}`)) return;
-    const response = await fetch(`${apiBase}/api/admin/categories/${collection.slug}`, {
+    const response = await fetch(`${apiBase()}/api/admin/categories/${collection.slug}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -343,7 +342,7 @@ export function Dashboard({ section }: { section: string }) {
       })),
     };
     const response = await fetch(
-      editing ? `${apiBase}/api/admin/products/${editing.id}` : `${apiBase}/api/admin/products`,
+      editing ? `${apiBase()}/api/admin/products/${editing.id}` : `${apiBase()}/api/admin/products`,
       {
         method: editing ? 'PATCH' : 'POST',
         headers: {
@@ -368,7 +367,7 @@ export function Dashboard({ section }: { section: string }) {
   async function remove(product: Product) {
     if (!token) return;
     if (!window.confirm(`Delete ${product.name}? It will leave the home page, Shop All, and its collection.`)) return;
-    const response = await fetch(`${apiBase}/api/admin/products/${product.id}`, {
+    const response = await fetch(`${apiBase()}/api/admin/products/${product.id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });

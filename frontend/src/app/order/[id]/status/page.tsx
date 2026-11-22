@@ -7,8 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAccount } from '@/lib/account-context';
 import { formatPrice } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiBase } from '@/lib/api';
 
 interface StoredOrderItem {
   productId: string;
@@ -60,7 +59,7 @@ export default function OrderStatusPage() {
       return;
     }
     let active = true;
-    fetch(`${apiBase}/api/orders/${orderId}`, {
+    fetch(`${apiBase()}/api/orders/${orderId}`, {
       cache: 'no-store',
       headers: { Authorization: `Bearer ${token}` },
     })

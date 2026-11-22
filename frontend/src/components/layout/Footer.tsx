@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import { siteConfig, footerLinks } from "@/lib/constants";
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiBase } from "@/lib/api";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -13,7 +12,7 @@ export function Footer() {
 
   useEffect(() => {
     let active = true;
-    fetch(`${apiBase}/api/categories`, { cache: 'no-store' })
+    fetch(`${apiBase()}/api/categories`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((body: { data?: { name: string; slug: string }[] } | null) => {
         if (!active || !body?.data?.length) return;

@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { apiBase } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const statuses = [
   { value: 'not_shipped', label: 'Preparing to ship' },
@@ -40,7 +39,7 @@ export function OrderDesk({ token }: { token: string }) {
 
   useEffect(() => {
     let active = true;
-    fetch(`${apiBase}/api/admin/orders`, {
+    fetch(`${apiBase()}/api/admin/orders`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     })
@@ -69,7 +68,7 @@ export function OrderDesk({ token }: { token: string }) {
     const shipmentStatus = choices[orderNumber];
     setSaving(orderNumber);
     setMessage('');
-    const response = await fetch(`${apiBase}/api/admin/orders/${orderNumber}`, {
+    const response = await fetch(`${apiBase()}/api/admin/orders/${orderNumber}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

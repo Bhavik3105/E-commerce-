@@ -7,8 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAccount } from '@/lib/account-context';
 import { formatPrice } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiBase } from '@/lib/api';
 
 interface AccountOrderItem {
   productName: string;
@@ -52,7 +51,7 @@ export default function AccountPage() {
       return;
     }
     let active = true;
-    fetch(`${apiBase}/api/account/orders`, {
+    fetch(`${apiBase()}/api/account/orders`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     })

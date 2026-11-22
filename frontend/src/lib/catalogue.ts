@@ -1,10 +1,9 @@
 import type { Category, Product } from '@/types';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiBase } from '@/lib/api';
 
 export async function fetchProducts(): Promise<Product[]> {
   try {
-    const response = await fetch(`${apiBase}/api/products`, { cache: 'no-store' });
+    const response = await fetch(`${apiBase()}/api/products`, { cache: 'no-store' });
     if (!response.ok) return [];
     const body = (await response.json()) as { data?: Product[] };
     return (body.data ?? []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -15,7 +14,7 @@ export async function fetchProducts(): Promise<Product[]> {
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
-    const response = await fetch(`${apiBase}/api/categories`, { cache: 'no-store' });
+    const response = await fetch(`${apiBase()}/api/categories`, { cache: 'no-store' });
     if (!response.ok) return [];
     const body = (await response.json()) as { data?: Category[] };
     return body.data ?? [];
@@ -26,7 +25,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchProduct(slug: string): Promise<Product | null> {
   try {
-    const response = await fetch(`${apiBase}/api/products/${slug}`, { cache: 'no-store' });
+    const response = await fetch(`${apiBase()}/api/products/${slug}`, { cache: 'no-store' });
     if (!response.ok) return null;
     const body = (await response.json()) as { data?: Product };
     return body.data ?? null;

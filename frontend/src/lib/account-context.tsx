@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { apiBase } from '@/lib/api';
+
 const storageKey = 'jummip-account-token';
 
 export interface AccountCustomer {
@@ -41,7 +42,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
-    fetch(`${apiBase}/api/account/me`, {
+    fetch(`${apiBase()}/api/account/me`, {
       headers: { Authorization: `Bearer ${saved}` },
       cache: 'no-store',
     })
@@ -70,7 +71,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function openSession(path: string, payload: unknown): Promise<string | null> {
-    const response = await fetch(`${apiBase}${path}`, {
+    const response = await fetch(`${apiBase()}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

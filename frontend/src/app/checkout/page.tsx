@@ -10,9 +10,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatPrice } from '@/lib/utils';
+import { apiBase } from '@/lib/api';
 import { loadRazorpay, type RazorpaySuccess } from '@/lib/razorpay';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 type PaymentSession = {
   keyId: string;
@@ -49,7 +48,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const response = await fetch(`${apiBase}/api/orders`, {
+    const response = await fetch(`${apiBase()}/api/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -85,7 +84,7 @@ export default function CheckoutPage() {
 
     const readyToPay = await loadRazorpay();
     if (!readyToPay || !window.Razorpay) {
-      await fetch(`${apiBase}/api/orders/${body.data.orderNumber}/cancel`, {
+      await fetch(`${apiBase()}/api/orders/${body.data.orderNumber}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ checkoutToken: body.payment.checkoutToken }),
@@ -126,7 +125,7 @@ export default function CheckoutPage() {
   };
 
   async function confirmPayment(orderNumber: string, checkoutToken: string, result: RazorpaySuccess) {
-    const response = await fetch(`${apiBase}/api/orders/${orderNumber}/payment`, {
+    const response = await fetch(`${apiBase()}/api/orders/${orderNumber}/payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -147,7 +146,7 @@ export default function CheckoutPage() {
   }
 
   async function cancelPayment(orderNumber: string, checkoutToken: string) {
-    await fetch(`${apiBase}/api/orders/${orderNumber}/cancel`, {
+    await fetch(`${apiBase()}/api/orders/${orderNumber}/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ checkoutToken }),

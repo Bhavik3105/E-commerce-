@@ -7,7 +7,7 @@
       "entrypoint": "src/app.ts",
       "functions": {
         "src/app.ts": {
-          "includeFiles": ["node_modules/**", "backend/node_modules/**"]
+          "includeFiles": "backend/node_modules/**"
         }
       }
     },

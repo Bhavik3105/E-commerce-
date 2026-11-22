@@ -1,6 +1,5 @@
 import React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { NewsletterForm } from '@/components/blog/NewsletterForm';
 

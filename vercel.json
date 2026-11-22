@@ -4,12 +4,7 @@
     "backend": {
       "root": "backend",
       "framework": "express",
-      "entrypoint": "src/app.ts",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "backend/node_modules/**"
-        }
-      }
+      "entrypoint": "server.cjs"
     },
     "frontend": {
       "root": "frontend",

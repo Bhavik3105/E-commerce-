@@ -41,7 +41,13 @@ export function deliveryLabel(status: string): string {
   return 'Preparing to ship';
 }
 
-async function sendMail(input: { to: string; subject: string; text: string; html: string }): Promise<void> {
+async function sendMail(input: {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  replyTo?: string;
+}): Promise<void> {
   const transport = nodemailer.createTransport({
     host: config.smtpHost,
     port: config.smtpPort,
@@ -54,6 +60,7 @@ async function sendMail(input: { to: string; subject: string; text: string; html
   await transport.sendMail({
     from: config.mailFrom,
     to: input.to,
+    replyTo: input.replyTo,
     subject: input.subject,
     text: input.text,
     html: input.html,
@@ -144,6 +151,65 @@ export async function sendOrderPlacedEmail(order: MailOrder): Promise<void> {
       <p style="font-size:14px"><strong>Delivery time</strong><br>${escapeHtml(deliveryTime)}</p>
       <p><a href="${escapeHtml(orderUrl)}" style="display:inline-block;background:#0d8428;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600">View order status</a></p>
       <p style="font-size:13px;color:#737373">Jummip</p>
+    </div>`,
+  });
+}
+
+export async function sendAdminOrderEmail(order: MailOrder): Promise<void> {
+  if (!config.adminEmail || !order.customer || !order.deliveryAddress) return;
+  const customer = order.customer;
+  const deliveryAddress = order.deliveryAddress;
+  const ordersUrl = `${config.storeUrl}/admin/orders`;
+  const address = [
+    deliveryAddress.line1,
+    deliveryAddress.line2,
+    `${deliveryAddress.city}, ${deliveryAddress.state} ${deliveryAddress.pincode}`,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const delivery = order.shipping === 0 ? 'FREE' : rupees(order.shipping);
+  const itemLines = order.items.map(
+    (item) =>
+      `${item.productName} — ${item.size}, ${item.colour}, qty ${item.quantity} — ${rupees(item.priceAtPurchase * item.quantity)}`
+  );
+  const itemHtml = order.items
+    .map(
+      (item) =>
+        `<tr><td style="padding:8px 0;border-bottom:1px solid #e5e5e5">${escapeHtml(item.productName)}<br><span style="color:#525252;font-size:13px">${escapeHtml(item.size)} · ${escapeHtml(item.colour)} · Qty ${item.quantity}</span></td><td style="padding:8px 0;border-bottom:1px solid #e5e5e5;text-align:right">${escapeHtml(rupees(item.priceAtPurchase * item.quantity))}</td></tr>`
+    )
+    .join('');
+  await sendMail({
+    to: config.adminEmail,
+    replyTo: customer.email,
+    subject: `New order ${order.orderNumber} · ${rupees(order.total)}`,
+    text: [
+      `New paid order ${order.orderNumber}.`,
+      '',
+      'Customer:',
+      customer.name,
+      customer.email,
+      `+91 ${customer.phone}`,
+      '',
+      'Shipping:',
+      address,
+      `Delivery: ${delivery}`,
+      '',
+      'Products:',
+      ...itemLines,
+      '',
+      `Subtotal: ${rupees(order.subtotal)}`,
+      `Delivery: ${delivery}`,
+      `Total: ${rupees(order.total)}`,
+      '',
+      `Open orders: ${ordersUrl}`,
+    ].join('\n'),
+    html: `<div style="font-family:Arial,sans-serif;color:#171717;line-height:1.5;max-width:520px">
+      <p>New paid order <strong>${escapeHtml(order.orderNumber)}</strong>.</p>
+      <p style="font-size:14px"><strong>Customer</strong><br>${escapeHtml(customer.name)}<br>${escapeHtml(customer.email)}<br>+91 ${escapeHtml(customer.phone)}</p>
+      <p style="font-size:14px"><strong>Shipping</strong><br>${escapeHtml(address)}<br>Delivery ${escapeHtml(delivery)}</p>
+      <table style="width:100%;border-collapse:collapse">${itemHtml}</table>
+      <p style="font-size:14px">Subtotal ${escapeHtml(rupees(order.subtotal))}<br>Delivery ${escapeHtml(delivery)}<br><strong>Total ${escapeHtml(rupees(order.total))}</strong></p>
+      <p><a href="${escapeHtml(ordersUrl)}" style="display:inline-block;background:#171717;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600">Open orders</a></p>
     </div>`,
   });
 }

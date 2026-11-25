@@ -8,7 +8,7 @@ import { Product, unitPrice, type ProductDoc } from '../models/Product';
 import { requireDb } from '../middleware/error';
 import { shippingFor } from '../lib/shipping';
 import { RazorpayError, createRazorpayOrder, paymentSignatureMatches, razorpayConfigured } from '../lib/razorpay';
-import { mailConfigured, sendOrderPlacedEmail } from '../lib/mail';
+import { mailConfigured, sendAdminOrderEmail, sendOrderPlacedEmail } from '../lib/mail';
 import { requireCustomer } from '../lib/customer-auth';
 
 const orderItemSchema = z.object({
@@ -117,10 +117,16 @@ orderRouter.post('/:orderNumber/payment', requireDb, async (req, res, next) => {
     order.razorpayPaymentId = parsed.data.razorpayPaymentId;
     await order.save();
     if (mailConfigured()) {
+      const mailed = toPublicOrder(order);
       try {
-        await sendOrderPlacedEmail(toPublicOrder(order));
+        await sendOrderPlacedEmail(mailed);
       } catch (err) {
         console.error('Order confirmation email failed');
+      }
+      try {
+        await sendAdminOrderEmail(mailed);
+      } catch (err) {
+        console.error('Admin order email failed');
       }
     }
     res.json({ data: toPublicOrder(order) });

@@ -21,5 +21,6 @@ export const config = {
   smtpUser: process.env.SMTP_USER?.trim() ?? '',
   smtpPass: process.env.SMTP_PASS ?? '',
   mailFrom: process.env.MAIL_FROM?.trim() || process.env.SMTP_USER?.trim() || '',
+  adminEmail: process.env.ADMIN_EMAIL?.trim() || process.env.SMTP_USER?.trim() || '',
   storeUrl: (process.env.STORE_URL?.trim() || process.env.CORS_ORIGIN?.trim() || 'http://localhost:3000').replace(/\/$/, ''),
 };

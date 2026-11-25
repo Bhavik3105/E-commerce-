@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Product } from '@/types';
 import { useCart } from '@/lib/cart-context';
 import { formatPrice, getDiscountPercent } from '@/lib/utils';
@@ -15,28 +16,66 @@ interface ProductDetailViewProps {
   product: Product;
 }
 
+function sameOption(value: string | null, options: string[]): string | null {
+  if (!value) return null;
+  const wanted = value.trim().toLowerCase();
+  return options.find((option) => option.toLowerCase() === wanted) ?? null;
+}
+
 export function ProductDetailView({ product }: ProductDetailViewProps) {
   const { addItem } = useCart();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // Extract unique colours and sizes
   const uniqueColours = getProductColours(product).map((v) => ({
     colour: v.colour,
     colourHex: v.colourHex,
   }));
-
-  const [selectedColour, setSelectedColour] = useState<string | null>(
-    uniqueColours[0]?.colour || null
-  );
+  const colourNames = uniqueColours.map((item) => item.colour);
+  const selectedColour =
+    sameOption(searchParams.get('colour') ?? searchParams.get('color'), colourNames) ??
+    colourNames[0] ??
+    null;
 
   // Available sizes for selected colour
   const availableSizesForColour = getProductSizes(
     product,
     selectedColour || undefined
   ).map((v) => v.size);
+  const selectedSize =
+    sameOption(searchParams.get('size'), availableSizesForColour) ??
+    availableSizesForColour[0] ??
+    null;
 
-  const [selectedSize, setSelectedSize] = useState<string | null>(
-    availableSizesForColour[0] || null
-  );
+  useEffect(() => {
+    const current = new URLSearchParams(searchParams.toString());
+    const next = new URLSearchParams(current);
+    next.delete('color');
+    if (selectedColour) next.set('colour', selectedColour);
+    else next.delete('colour');
+    if (selectedSize) next.set('size', selectedSize);
+    else next.delete('size');
+    next.sort();
+    const sortedCurrent = new URLSearchParams(current);
+    sortedCurrent.sort();
+    if (next.toString() === sortedCurrent.toString()) return;
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams, selectedColour, selectedSize]);
+
+  function selectVariant(colour: string, size: string | null) {
+    const sizes = getProductSizes(product, colour).map((variant) => variant.size);
+    const nextSize = size && sizes.includes(size) ? size : sizes[0] ?? null;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('color');
+    params.set('colour', colour);
+    if (nextSize) params.set('size', nextSize);
+    else params.delete('size');
+    params.sort();
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   const [quantity, setQuantity] = useState<number>(1);
 
@@ -121,14 +160,7 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
               <ColourSelector
                 colours={uniqueColours}
                 selectedColour={selectedColour}
-                onSelect={(col) => {
-                  setSelectedColour(col);
-                  // Reset size if current size isn't available in new colour
-                  const newSizes = getProductSizes(product, col).map((v) => v.size);
-                  if (selectedSize && !newSizes.includes(selectedSize)) {
-                    setSelectedSize(newSizes[0] || null);
-                  }
-                }}
+                onSelect={(col) => selectVariant(col, selectedSize)}
               />
             </div>
           )}
@@ -139,7 +171,9 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
               <SizeSelector
                 sizes={availableSizesForColour}
                 selectedSize={selectedSize}
-                onSelect={(sz) => setSelectedSize(sz)}
+                onSelect={(sz) => {
+                  if (selectedColour) selectVariant(selectedColour, sz);
+                }}
                 disabledSizes={disabledSizes}
               />
             </div>

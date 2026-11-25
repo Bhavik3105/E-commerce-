@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { fetchProduct, fetchProducts, productsForCategory } from '@/lib/catalogue';
 import { ProductDetailView } from '@/components/product/ProductDetailView';
@@ -49,7 +49,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
         ]}
       />
 
-      <ProductDetailView product={product} />
+      <Suspense fallback={null}>
+        <ProductDetailView product={product} />
+      </Suspense>
 
       {/* ─── Related Products ─── */}
       {related.length > 0 && (

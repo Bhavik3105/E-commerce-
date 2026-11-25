@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { apiBase } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 
@@ -72,7 +73,7 @@ export function OrderDesk({ token }: { token: string }) {
     const finish = () => setPrinting(null);
     window.addEventListener('afterprint', finish);
     const timer = window.setTimeout(() => {
-      const images = [...document.querySelectorAll<HTMLImageElement>('.order-print img')];
+      const images = Array.from(document.querySelectorAll<HTMLImageElement>('.order-print img'));
       Promise.all(
         images.map(
           (image) =>
@@ -244,8 +245,9 @@ export function OrderDesk({ token }: { token: string }) {
           </article>
         ))
       )}
-      {printing && (
-        <article className="order-print hidden p-8 text-black">
+      {printing &&
+        createPortal(
+        <article className="order-print pointer-events-none fixed left-[-10000px] top-0 w-[800px] bg-white p-8 text-black">
           <p className="text-xs font-semibold uppercase tracking-wider">Jummip</p>
           <h1 className="mt-1 text-2xl font-bold">Order {printing.orderNumber}</h1>
           <p className="mt-1 text-sm">
@@ -304,8 +306,9 @@ export function OrderDesk({ token }: { token: string }) {
               <span>{formatPrice(printing.total)}</span>
             </p>
           </div>
-        </article>
-      )}
+        </article>,
+          document.body
+        )}
     </div>
   );
 }

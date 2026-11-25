@@ -38,23 +38,19 @@ body {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .order-print,
-  .order-print * {
-    visibility: visible;
+  body > *:not(.order-print) {
+    display: none !important;
   }
 
   .order-print {
     display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+    position: static !important;
+    left: auto !important;
+    width: 100% !important;
     background: white;
     color: black;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
 

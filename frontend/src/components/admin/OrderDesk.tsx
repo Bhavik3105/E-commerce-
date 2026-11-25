@@ -14,10 +14,24 @@ type ShipmentStatus = (typeof statuses)[number]['value'];
 
 interface DeskItem {
   productName: string;
+  productImage: string;
   size: string;
   colour: string;
   quantity: number;
   priceAtPurchase: number;
+}
+
+/** Order photos are saved with the API address from checkout. Show them from the current site. */
+function orderImage(url: string): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url, apiBase() || 'http://localhost');
+    if (!parsed.pathname.startsWith('/uploads/')) return url;
+    const base = apiBase();
+    return base ? `${base}${parsed.pathname}` : parsed.pathname;
+  } catch {
+    return url;
+  }
 }
 
 interface DeskOrder {
@@ -126,10 +140,27 @@ export function OrderDesk({ token }: { token: string }) {
               </div>
               <p className="font-semibold text-neutral-900">{formatPrice(order.total)}</p>
             </div>
-            <ul className="mt-3 space-y-1 text-sm text-neutral-700">
+            <ul className="mt-4 divide-y divide-neutral-100 border-t border-neutral-100">
               {order.items.map((item, index) => (
-                <li key={`${order.orderNumber}-${index}`}>
-                  {item.productName} · {item.size} · {item.colour} · Qty {item.quantity}
+                <li key={`${order.orderNumber}-${index}`} className="flex items-center gap-3 py-3">
+                  <div className="h-16 w-12 flex-shrink-0 overflow-hidden rounded-md bg-neutral-100">
+                    {item.productImage ? (
+                      <img
+                        src={orderImage(item.productImage)}
+                        alt={item.productName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1 text-sm">
+                    <p className="font-medium text-neutral-900">{item.productName}</p>
+                    <p className="text-xs text-neutral-500">
+                      {item.size} · {item.colour} · Qty {item.quantity}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {formatPrice(item.priceAtPurchase * item.quantity)}
+                  </p>
                 </li>
               ))}
             </ul>

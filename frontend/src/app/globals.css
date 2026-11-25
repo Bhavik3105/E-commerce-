@@ -37,6 +37,27 @@ body {
   scrollbar-color: #A8A89E #F5F5F0;
 }
 
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .order-print,
+  .order-print * {
+    visibility: visible;
+  }
+
+  .order-print {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+    color: black;
+  }
+}
+
 @layer base {
   /* Smooth anchor scrolling */
   html {

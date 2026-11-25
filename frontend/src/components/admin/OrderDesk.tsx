@@ -40,8 +40,22 @@ interface DeskOrder {
   customer: { name: string; email: string; phone: string };
   deliveryAddress: { line1: string; line2?: string; city: string; state: string; pincode: string };
   items: DeskItem[];
+  subtotal: number;
+  shipping: number;
   total: number;
   shipmentStatus: ShipmentStatus;
+}
+
+function statusLabel(value: ShipmentStatus): string {
+  return statuses.find((status) => status.value === value)?.label ?? value;
+}
+
+function orderDate(value: string): string {
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 export function OrderDesk({ token }: { token: string }) {
@@ -50,6 +64,37 @@ export function OrderDesk({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState('');
   const [message, setMessage] = useState('');
+  const [printing, setPrinting] = useState<DeskOrder | null>(null);
+
+  useEffect(() => {
+    if (!printing) return;
+    let cancelled = false;
+    const finish = () => setPrinting(null);
+    window.addEventListener('afterprint', finish);
+    const timer = window.setTimeout(() => {
+      const images = [...document.querySelectorAll<HTMLImageElement>('.order-print img')];
+      Promise.all(
+        images.map(
+          (image) =>
+            new Promise<void>((resolve) => {
+              if (image.complete) {
+                resolve();
+                return;
+              }
+              image.onload = () => resolve();
+              image.onerror = () => resolve();
+            })
+        )
+      ).then(() => {
+        if (!cancelled) window.print();
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      window.removeEventListener('afterprint', finish);
+    };
+  }, [printing]);
 
   useEffect(() => {
     let active = true;
@@ -124,11 +169,7 @@ export function OrderDesk({ token }: { token: string }) {
               <div>
                 <h2 className="font-semibold text-neutral-900">{order.orderNumber}</h2>
                 <p className="text-sm text-neutral-500">
-                  {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
+                  {orderDate(order.createdAt)}
                   {' · '}
                   {order.customer.name} · {order.customer.email} · +91 {order.customer.phone}
                 </p>
@@ -192,9 +233,78 @@ export function OrderDesk({ token }: { token: string }) {
               >
                 {saving === order.orderNumber ? 'Saving…' : 'Save status'}
               </button>
+              <button
+                type="button"
+                onClick={() => setPrinting(order)}
+                className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800"
+              >
+                Print
+              </button>
             </div>
           </article>
         ))
+      )}
+      {printing && (
+        <article className="order-print hidden p-8 text-black">
+          <p className="text-xs font-semibold uppercase tracking-wider">Jummip</p>
+          <h1 className="mt-1 text-2xl font-bold">Order {printing.orderNumber}</h1>
+          <p className="mt-1 text-sm">
+            {orderDate(printing.createdAt)} · {statusLabel(printing.shipmentStatus)}
+          </p>
+
+          <div className="mt-6 grid grid-cols-2 gap-6">
+            <section>
+              <h2 className="text-sm font-semibold">Customer</h2>
+              <p className="mt-1 text-sm">{printing.customer.name}</p>
+              <p className="text-sm">{printing.customer.email}</p>
+              <p className="text-sm">+91 {printing.customer.phone}</p>
+            </section>
+            <section>
+              <h2 className="text-sm font-semibold">Shipping</h2>
+              <p className="mt-1 text-sm">{printing.deliveryAddress.line1}</p>
+              {printing.deliveryAddress.line2 ? <p className="text-sm">{printing.deliveryAddress.line2}</p> : null}
+              <p className="text-sm">
+                {printing.deliveryAddress.city}, {printing.deliveryAddress.state} {printing.deliveryAddress.pincode}
+              </p>
+              <p className="mt-1 text-sm">Delivery charge {formatPrice(printing.shipping)}</p>
+            </section>
+          </div>
+
+          <h2 className="mt-6 text-sm font-semibold">Products</h2>
+          <ul className="mt-2 divide-y divide-neutral-300 border-y border-neutral-300">
+            {printing.items.map((item, index) => (
+              <li key={`${printing.orderNumber}-print-${index}`} className="flex items-center gap-3 py-3">
+                <div className="h-16 w-12 flex-shrink-0 overflow-hidden bg-neutral-100">
+                  {item.productImage ? (
+                    <img src={orderImage(item.productImage)} alt="" className="h-full w-full object-cover" />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1 text-sm">
+                  <p className="font-medium">{item.productName}</p>
+                  <p>
+                    Size {item.size} · Colour {item.colour} · Qty {item.quantity}
+                  </p>
+                </div>
+                <p className="text-sm font-semibold">{formatPrice(item.priceAtPurchase * item.quantity)}</p>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-4 ml-auto w-52 space-y-1 text-sm">
+            <p className="flex justify-between">
+              <span>Subtotal</span>
+              <span>{formatPrice(printing.subtotal)}</span>
+            </p>
+            <p className="flex justify-between">
+              <span>Delivery</span>
+              <span>{formatPrice(printing.shipping)}</span>
+            </p>
+            <p className="flex justify-between border-t border-neutral-300 pt-1 font-semibold">
+              <span>Total</span>
+              <span>{formatPrice(printing.total)}</span>
+            </p>
+          </div>
+        </article>
       )}
     </div>
   );

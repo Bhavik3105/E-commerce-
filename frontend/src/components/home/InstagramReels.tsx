@@ -1,14 +1,12 @@
-import { instagramReelCode, instagramReels } from '@/data/instagram';
 import { siteConfig } from '@/lib/constants';
 
-const reels = instagramReels
-  .map((url) => {
-    const code = instagramReelCode(url);
-    return code ? { code, url } : null;
-  })
-  .filter((reel): reel is { code: string; url: string } => reel !== null);
+export interface StoreReel {
+  id: string;
+  url: string;
+  code: string;
+}
 
-export function InstagramReels() {
+export function InstagramReels({ reels }: { reels: StoreReel[] }) {
   return (
     <section className="container space-y-6" aria-labelledby="instagram-reels-heading">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -39,13 +37,18 @@ export function InstagramReels() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-wrap justify-center gap-6">
           {reels.map((reel) => (
-            <div key={reel.code} className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-card">
+            <div
+              key={reel.code}
+              className="relative w-[360px] max-w-full overflow-hidden rounded-3xl bg-black shadow-card"
+              style={{ aspectRatio: '9 / 16' }}
+            >
               <iframe
                 src={`https://www.instagram.com/reel/${reel.code}/embed`}
                 title={`Instagram reel ${reel.code}`}
-                className="h-[540px] w-full"
+                scrolling="no"
+                className="absolute left-1/2 top-[-54px] h-[calc(100%+220px)] w-[148%] max-w-none -translate-x-1/2 border-0"
                 loading="lazy"
                 allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
                 allowFullScreen

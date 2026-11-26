@@ -7,6 +7,8 @@ import type { Category, Product } from '@/types';
 import { formatPrice } from '@/lib/utils';
 import { pageSections } from '@/lib/dashboard';
 import { OrderDesk } from '@/components/admin/OrderDesk';
+import { TestimonialDesk } from '@/components/admin/TestimonialDesk';
+import { ReelDesk } from '@/components/admin/ReelDesk';
 import { apiBase } from '@/lib/api';
 const tokenKey = 'jummip-admin-token';
 
@@ -136,7 +138,7 @@ function PhotoField({
 }
 
 function pageHref(section: string): string {
-  if (section === 'home') return '/';
+  if (section === 'home' || section === 'testimonials' || section === 'reels') return '/';
   if (section === 'shop') return '/products';
   return `/category/${section}`;
 }
@@ -152,6 +154,7 @@ export function Dashboard({ section }: { section: string }) {
   const [collectionsReady, setCollectionsReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [addingCollection, setAddingCollection] = useState(false);
+  const [editingCollection, setEditingCollection] = useState(false);
   const [collectionDraft, setCollectionDraft] = useState({ name: '', description: '', imageUrl: '' });
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
@@ -169,6 +172,7 @@ export function Dashboard({ section }: { section: string }) {
     setCreating(false);
     setEditing(null);
     setAddingCollection(false);
+    setEditingCollection(false);
     setDraft(emptyDraft(section));
     setMessage('');
     setFormError('');
@@ -238,6 +242,7 @@ export function Dashboard({ section }: { section: string }) {
   function startCreate() {
     setEditing(null);
     setAddingCollection(false);
+    setEditingCollection(false);
     setDraft(emptyDraft(section, collections[0]?.slug ?? ''));
     setCreating(true);
     setMessage('');
@@ -247,9 +252,47 @@ export function Dashboard({ section }: { section: string }) {
   function startCollection() {
     setCreating(false);
     setEditing(null);
+    setEditingCollection(false);
     setAddingCollection(true);
     setCollectionDraft({ name: '', description: '', imageUrl: '' });
     setMessage('');
+  }
+
+  function startEditCollection() {
+    const currentCollection = collections.find((item) => item.slug === section);
+    if (!currentCollection) return;
+    setCreating(false);
+    setEditing(null);
+    setAddingCollection(false);
+    setEditingCollection(true);
+    setCollectionDraft({
+      name: currentCollection.name,
+      description: currentCollection.description,
+      imageUrl: currentCollection.image ?? '',
+    });
+    setMessage('');
+  }
+
+  async function updateCollection(event: React.FormEvent) {
+    event.preventDefault();
+    const currentCollection = collections.find((item) => item.slug === section);
+    if (!token || !currentCollection) return;
+    setSaving(true);
+    setMessage('');
+    const response = await fetch(`${apiBase()}/api/admin/categories/${currentCollection.slug}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(collectionDraft),
+    });
+    const body = (await response.json()) as { data?: Category; message?: string };
+    setSaving(false);
+    if (!response.ok || !body.data) {
+      setMessage(body.message || 'Could not update the collection');
+      return;
+    }
+    setCollections((current) => current.map((item) => (item.slug === body.data?.slug ? (body.data as Category) : item)));
+    setEditingCollection(false);
+    setMessage(`${body.data.name} updated. The page address stays the same.`);
   }
 
   async function saveCollection(event: React.FormEvent) {
@@ -302,6 +345,7 @@ export function Dashboard({ section }: { section: string }) {
 
   function startEdit(product: Product) {
     setCreating(false);
+    setEditingCollection(false);
     setEditing(product);
     setDraft(draftFromProduct(product));
     setMessage('');
@@ -413,9 +457,15 @@ export function Dashboard({ section }: { section: string }) {
   }
 
   const isOrders = section === 'orders';
+  const isTestimonials = section === 'testimonials';
+  const isReels = section === 'reels';
   const page = pageSections.find((item) => item.id === section);
   const collection = collections.find((item) => item.slug === section);
-  const current = page ?? (collection
+  const current = isTestimonials
+    ? { label: 'Testimonials', blurb: 'Customer notes shown on the homepage.' }
+    : isReels
+      ? { label: 'Reels', blurb: 'Instagram reels that play on the homepage.' }
+      : page ?? (collection
     ? {
         label: collection.name,
         blurb: `The ${collection.name} collection page. These products are included in Shop All.`,
@@ -436,6 +486,26 @@ export function Dashboard({ section }: { section: string }) {
         <div className="px-3 pb-4">
           <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Pages</p>
           <ul className="space-y-1">
+            <li>
+              <Link
+                href="/admin/reels"
+                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm ${
+                  isReels ? 'bg-white text-neutral-950' : 'text-neutral-200 hover:bg-white/10'
+                }`}
+              >
+                <span>Reels</span>
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/admin/testimonials"
+                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm ${
+                  isTestimonials ? 'bg-white text-neutral-950' : 'text-neutral-200 hover:bg-white/10'
+                }`}
+              >
+                <span>Testimonials</span>
+              </Link>
+            </li>
             <li>
               <Link
                 href="/admin/orders"
@@ -511,8 +581,17 @@ export function Dashboard({ section }: { section: string }) {
                 : current?.blurb ?? 'This collection is not on the store yet. Add it from the sidebar.'}
             </p>
           </div>
-          {!isOrders && (
+          {!isOrders && !isTestimonials && !isReels && (
             <div className="flex flex-wrap gap-2">
+              {collection && (
+                <button
+                  type="button"
+                  onClick={startEditCollection}
+                  className="rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                >
+                  Edit collection
+                </button>
+              )}
               {collection && (
                 <button
                   type="button"
@@ -535,9 +614,55 @@ export function Dashboard({ section }: { section: string }) {
 
         {isOrders ? (
           <OrderDesk token={token} />
+        ) : isTestimonials ? (
+          <TestimonialDesk token={token} collections={collections.map((item) => item.name)} />
+        ) : isReels ? (
+          <ReelDesk token={token} />
         ) : (
           <>
         {message && <p className="mt-4 text-sm text-neutral-700">{message}</p>}
+
+        {editingCollection && collection && (
+          <form onSubmit={updateCollection} className="mt-6 space-y-4 rounded-2xl border border-neutral-200 bg-white p-5">
+            <h2 className="text-lg font-semibold text-neutral-900">Edit collection</h2>
+            <p className="text-sm text-neutral-500">The page address stays the same. Products in this collection stay linked to it.</p>
+            <label className="block text-sm font-medium text-neutral-700">
+              Name
+              <input
+                required
+                minLength={2}
+                value={collectionDraft.name}
+                onChange={(event) => setCollectionDraft({ ...collectionDraft, name: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm font-medium text-neutral-700">
+              Description
+              <textarea
+                required
+                minLength={10}
+                value={collectionDraft.description}
+                onChange={(event) => setCollectionDraft({ ...collectionDraft, description: event.target.value })}
+                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2"
+                rows={3}
+              />
+            </label>
+            <PhotoField
+              value={collectionDraft.imageUrl}
+              token={token ?? ''}
+              onMessage={setMessage}
+              onChange={(imageUrl) => setCollectionDraft({ ...collectionDraft, imageUrl })}
+            />
+            <div className="flex gap-3">
+              <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white">
+                {saving ? 'Saving…' : 'Save collection'}
+              </button>
+              <button type="button" onClick={() => setEditingCollection(false)} className="rounded-lg px-4 py-2.5 text-sm font-semibold text-neutral-600">
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
 
         {addingCollection && (
           <form onSubmit={saveCollection} className="mt-6 space-y-4 rounded-2xl border border-neutral-200 bg-white p-5">

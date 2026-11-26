@@ -1,58 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-interface Testimonial {
-  id: string;
-  name: string;
-  collection: string;
-  quote: string;
-}
-
-const testimonials: Testimonial[] = [
-  {
-    id: 't1',
-    name: 'Ananya M.',
-    collection: 'T-Shirts',
-    quote:
-      'The cotton tee stays soft after washing and the fit is easy without looking oversized. It has become the shirt I reach for first.',
-  },
-  {
-    id: 't2',
-    name: 'Riya S.',
-    collection: 'Nightsuits',
-    quote:
-      'Light enough for warm nights and still comfortable by morning. The waistband does not dig in, which is rare.',
-  },
-  {
-    id: 't3',
-    name: 'Meera K.',
-    collection: 'Undergarments',
-    quote:
-      'Everyday cotton that actually feels gentle. True to size, and it sits flat under a tee.',
-  },
-  {
-    id: 't4',
-    name: 'Kavya P.',
-    collection: 'T-Shirts',
-    quote:
-      'The neckline kept its shape and the fabric is not see-through. Simple, and that is exactly what I wanted.',
-  },
-  {
-    id: 't5',
-    name: 'Ishita R.',
-    collection: 'Nightsuits',
-    quote:
-      'I ordered the nightsuit set for travel. It folds small, washes well, and still looks neat.',
-  },
-  {
-    id: 't6',
-    name: 'Neha D.',
-    collection: 'Undergarments',
-    quote:
-      'Soft straps and a clean finish. Comfortable for a full day, not just the first wear.',
-  },
-];
+import type { StoreTestimonial } from '@/lib/testimonials';
 
 function Stars() {
   return (
@@ -66,7 +15,7 @@ function Stars() {
   );
 }
 
-function QuoteCard({ item, featured = false }: { item: Testimonial; featured?: boolean }) {
+function QuoteCard({ item, featured = false }: { item: StoreTestimonial; featured?: boolean }) {
   return (
     <figure
       className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft backdrop-blur-md transition duration-500 hover:-translate-y-1 hover:border-primary-200 hover:shadow-[0_20px_50px_-24px_rgba(22,165,53,0.45)] ${
@@ -95,15 +44,15 @@ function QuoteCard({ item, featured = false }: { item: Testimonial; featured?: b
   );
 }
 
-export function Testimonials() {
+export function Testimonials({ items }: { items: StoreTestimonial[] }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const featured = testimonials.slice(0, 3);
-  const current = featured[active];
-  const supporting = featured.filter((item) => item.id !== current.id);
+  const featured = items.slice(0, 3);
+  const current = featured[active] ?? featured[0];
+  const supporting = current ? featured.filter((item) => item.id !== current.id) : [];
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || featured.length < 2) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const timer = window.setInterval(() => {
@@ -112,6 +61,8 @@ export function Testimonials() {
 
     return () => window.clearInterval(timer);
   }, [paused, featured.length]);
+
+  if (!current) return null;
 
   return (
     <section className="relative overflow-hidden bg-neutral-900 py-16 text-white sm:py-20" aria-labelledby="testimonials-heading">
@@ -164,7 +115,7 @@ export function Testimonials() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActive(testimonials.findIndex((entry) => entry.id === item.id))}
+                onClick={() => setActive(items.findIndex((entry) => entry.id === item.id))}
                 className="h-full text-left"
               >
                 <QuoteCard item={item} />
@@ -176,7 +127,7 @@ export function Testimonials() {
 
       <div className="marquee mt-12">
         <div className="marquee-track gap-4 px-4">
-          {[...testimonials, ...testimonials].map((item, index) => (
+          {[...items, ...items].map((item, index) => (
             <figure
               key={`${item.id}-${index}`}
               className="w-[280px] shrink-0 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-sm sm:w-[340px]"

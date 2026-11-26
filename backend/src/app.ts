@@ -10,6 +10,8 @@ import { productRouter } from './routes/products';
 import { orderRouter } from './routes/orders';
 import { accountRouter } from './routes/account';
 import { adminRouter } from './routes/admin';
+import { testimonialRouter } from './routes/testimonials';
+import { reelRouter } from './routes/reels';
 import { errorHandler, notFound } from './middleware/error';
 
 export const app = express();
@@ -48,6 +50,8 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/products', productRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/account', accountRouter);
+app.use('/api/testimonials', testimonialRouter);
+app.use('/api/reels', reelRouter);
 app.use('/api/admin', adminRouter);
 
 app.use(notFound);

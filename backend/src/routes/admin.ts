@@ -6,6 +6,9 @@ import { adminToken, requireAdmin } from '../lib/admin-auth';
 import { photoUpload } from '../lib/upload';
 import { requireDb } from '../middleware/error';
 import { Category, toPublicCategory } from '../models/Category';
+import { Testimonial, toPublicTestimonial } from '../models/Testimonial';
+import { Reel, toPublicReel } from '../models/Reel';
+import { instagramReelCode } from '../lib/instagram-reel';
 import { Order, toPublicOrder, type OrderDoc } from '../models/Order';
 import { Product, toPublicProduct, type ProductDoc } from '../models/Product';
 import { cancelReasonLabel, cancelReasonValues, refundNote } from '../lib/cancel-reasons';
@@ -193,6 +196,8 @@ const reservedSlugs = new Set([
   'orders',
   'forgot-password',
   'reset-password',
+  'testimonials',
+  'reels',
 ]);
 
 adminRouter.post('/categories', requireAdmin, requireDb, async (req, res, next) => {
@@ -214,6 +219,29 @@ adminRouter.post('/categories', requireAdmin, requireDb, async (req, res, next) 
       sortOrder,
     });
     res.status(201).json({ data: toPublicCategory(saved) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.patch('/categories/:slug', requireAdmin, requireDb, async (req, res, next) => {
+  try {
+    const parsed = collectionBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: 'Check the collection details', errors: issues(parsed.error.issues) });
+      return;
+    }
+    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+    const category = await Category.findOne({ slug });
+    if (!category) {
+      res.status(404).json({ message: 'Collection not found' });
+      return;
+    }
+    category.name = parsed.data.name;
+    category.description = parsed.data.description;
+    category.image = parsed.data.imageUrl;
+    await category.save();
+    res.json({ data: toPublicCategory(category) });
   } catch (err) {
     next(err);
   }
@@ -337,6 +365,129 @@ adminRouter.patch('/products/:id', requireAdmin, requireDb, async (req, res, nex
     }
     const populated = await Product.findById(existing._id).populate('category');
     res.json({ data: toPublicProduct(populated as ProductDoc & { category: Types.ObjectId }) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const testimonialBody = z.object({
+  name: z.string().trim().min(2).max(60),
+  collection: z.string().trim().min(2).max(40),
+  quote: z.string().trim().min(10).max(400),
+});
+
+adminRouter.get('/testimonials', requireAdmin, requireDb, async (_req, res, next) => {
+  try {
+    const notes = await Testimonial.find().sort({ createdAt: -1 });
+    res.json({ data: notes.map((note) => toPublicTestimonial(note)) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.post('/testimonials', requireAdmin, requireDb, async (req, res, next) => {
+  try {
+    const parsed = testimonialBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: 'Check the testimonial', errors: issues(parsed.error.issues) });
+      return;
+    }
+    const saved = await Testimonial.create({
+      name: parsed.data.name,
+      collectionName: parsed.data.collection,
+      quote: parsed.data.quote,
+    });
+    res.status(201).json({ data: toPublicTestimonial(saved) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.patch('/testimonials/:id', requireAdmin, requireDb, async (req, res, next) => {
+  try {
+    const parsed = testimonialBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: 'Check the testimonial', errors: issues(parsed.error.issues) });
+      return;
+    }
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const note = await Testimonial.findById(id);
+    if (!note) {
+      res.status(404).json({ message: 'Testimonial not found' });
+      return;
+    }
+    note.name = parsed.data.name;
+    note.collectionName = parsed.data.collection;
+    note.quote = parsed.data.quote;
+    await note.save();
+    res.json({ data: toPublicTestimonial(note) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.delete('/testimonials/:id', requireAdmin, requireDb, async (req, res, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const deleted = await Testimonial.findByIdAndDelete(id);
+    if (!deleted) {
+      res.status(404).json({ message: 'Testimonial not found' });
+      return;
+    }
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+const reelBody = z.object({
+  url: z.string().trim().url().max(500),
+});
+
+adminRouter.get('/reels', requireAdmin, requireDb, async (_req, res, next) => {
+  try {
+    const reels = await Reel.find().sort({ createdAt: -1 });
+    res.json({ data: reels.map((reel) => toPublicReel(reel)) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.post('/reels', requireAdmin, requireDb, async (req, res, next) => {
+  try {
+    const parsed = reelBody.safeParse(req.body);
+    const code = parsed.success ? instagramReelCode(parsed.data.url) : null;
+    if (!parsed.success || !code) {
+      res.status(400).json({ message: 'Paste an Instagram reel link, like https://www.instagram.com/reel/...' });
+      return;
+    }
+    if (await Reel.exists({ code })) {
+      res.status(409).json({ message: 'This reel is already on the homepage.' });
+      return;
+    }
+    if ((await Reel.countDocuments()) >= 12) {
+      res.status(400).json({ message: 'The homepage can show 12 reels. Remove one before adding another.' });
+      return;
+    }
+    const saved = await Reel.create({
+      url: `https://www.instagram.com/reel/${code}/`,
+      code,
+    });
+    res.status(201).json({ data: toPublicReel(saved) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.delete('/reels/:id', requireAdmin, requireDb, async (req, res, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const deleted = await Reel.findByIdAndDelete(id);
+    if (!deleted) {
+      res.status(404).json({ message: 'Reel not found' });
+      return;
+    }
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

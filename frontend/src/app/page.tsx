@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { fetchCategories, fetchProducts, homeProducts } from '@/lib/catalogue';
+import { fetchReels, fetchTestimonials } from '@/lib/testimonials';
 import { getDiscountPercent } from '@/lib/utils';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { CategoryCard } from '@/components/category/CategoryCard';
@@ -11,7 +12,12 @@ import { InstagramReels } from '@/components/home/InstagramReels';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const [products, categories] = await Promise.all([fetchProducts(), fetchCategories()]);
+  const [products, categories, testimonials, reels] = await Promise.all([
+    fetchProducts(),
+    fetchCategories(),
+    fetchTestimonials(),
+    fetchReels(),
+  ]);
   const saleProducts = products.filter((product) => product.salePrice && product.isActive).slice(0, 4);
   const maxSalePercent = saleProducts.reduce((max, product) => {
     if (!product.salePrice) return max;
@@ -122,7 +128,7 @@ export default async function HomePage() {
         );
       })}
 
-      <InstagramReels />
+      <InstagramReels reels={reels} />
 
       {saleProducts.length > 0 && (
       <section className="container">
@@ -196,7 +202,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      <Testimonials />
+      <Testimonials items={testimonials} />
       </div>
     </div>
   );

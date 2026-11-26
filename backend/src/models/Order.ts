@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType } from 'mongoose';
+import { cancelReasonLabel, cancelReasonValues, refundNote } from '../lib/cancel-reasons';
 
 const orderItemSchema = new Schema(
   {
@@ -50,6 +51,10 @@ const orderSchema = new Schema(
       enum: ['not_shipped', 'shipped', 'delivered'],
       default: 'not_shipped',
     },
+    cancelReason: {
+      type: String,
+      enum: cancelReasonValues,
+    },
     notes: { type: String },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },
@@ -90,6 +95,9 @@ export function toPublicOrder(doc: OrderDoc) {
     paymentStatus: doc.paymentStatus,
     orderStatus: doc.orderStatus,
     shipmentStatus: doc.shipmentStatus,
+    cancelReason: doc.cancelReason ?? null,
+    cancelReasonLabel: cancelReasonLabel(doc.cancelReason),
+    refundNote: doc.orderStatus === 'cancelled' && doc.paymentStatus === 'paid' ? refundNote : null,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };

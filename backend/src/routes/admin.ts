@@ -6,9 +6,10 @@ import { adminToken, requireAdmin } from '../lib/admin-auth';
 import { photoUpload } from '../lib/upload';
 import { requireDb } from '../middleware/error';
 import { Category, toPublicCategory } from '../models/Category';
-import { Order, toPublicOrder } from '../models/Order';
+import { Order, toPublicOrder, type OrderDoc } from '../models/Order';
 import { Product, toPublicProduct, type ProductDoc } from '../models/Product';
-import { mailConfigured, sendOrderStatusEmail } from '../lib/mail';
+import { cancelReasonLabel, cancelReasonValues, refundNote } from '../lib/cancel-reasons';
+import { mailConfigured, sendOrderCancelledEmail, sendOrderStatusEmail } from '../lib/mail';
 import type { Types } from 'mongoose';
 
 const variantSchema = z.object({
@@ -82,6 +83,10 @@ adminRouter.patch('/orders/:orderNumber', requireAdmin, requireDb, async (req, r
       res.status(404).json({ message: 'Order not found' });
       return;
     }
+    if (order.orderStatus === 'cancelled') {
+      res.status(409).json({ message: 'This order is cancelled.' });
+      return;
+    }
     const changed = order.shipmentStatus !== parsed.data.shipmentStatus;
     order.shipmentStatus = parsed.data.shipmentStatus;
     order.orderStatus =
@@ -101,6 +106,65 @@ adminRouter.patch('/orders/:orderNumber', requireAdmin, requireDb, async (req, r
       }
     }
     res.json({ data: toPublicOrder(order), emailed });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const cancelBody = z.object({
+  reason: z.enum(cancelReasonValues),
+});
+
+async function releaseStock(order: OrderDoc): Promise<void> {
+  if (order.stockReleased) return;
+  for (const item of order.items) {
+    await Product.updateOne(
+      {
+        _id: item.productId,
+        variants: { $elemMatch: { size: item.size, colour: item.colour } },
+      },
+      { $inc: { 'variants.$.stock': item.quantity } }
+    );
+  }
+  order.stockReleased = true;
+}
+
+adminRouter.post('/orders/:orderNumber/cancel', requireAdmin, requireDb, async (req, res, next) => {
+  try {
+    const parsed = cancelBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: 'Choose why this order is being cancelled.' });
+      return;
+    }
+    const orderNumber = Array.isArray(req.params.orderNumber) ? req.params.orderNumber[0] : req.params.orderNumber;
+    const order = await Order.findOne({ orderNumber, paymentStatus: 'paid' });
+    if (!order) {
+      res.status(404).json({ message: 'Order not found' });
+      return;
+    }
+    if (order.orderStatus === 'cancelled') {
+      res.status(409).json({ message: 'This order is already cancelled.' });
+      return;
+    }
+    const reason = cancelReasonLabel(parsed.data.reason);
+    if (!reason) {
+      res.status(400).json({ message: 'Choose why this order is being cancelled.' });
+      return;
+    }
+    await releaseStock(order);
+    order.orderStatus = 'cancelled';
+    order.cancelReason = parsed.data.reason;
+    await order.save();
+    let emailed = false;
+    if (mailConfigured()) {
+      try {
+        await sendOrderCancelledEmail(toPublicOrder(order), reason);
+        emailed = true;
+      } catch (err) {
+        console.error('Order cancellation email failed');
+      }
+    }
+    res.json({ data: toPublicOrder(order), emailed, refundNote });
   } catch (err) {
     next(err);
   }

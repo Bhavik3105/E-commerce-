@@ -40,6 +40,8 @@ interface StoredOrder {
   paymentStatus?: string;
   orderStatus?: string;
   shipmentStatus?: string;
+  cancelReasonLabel?: string | null;
+  refundNote?: string | null;
   paidAt?: string;
 }
 
@@ -109,6 +111,7 @@ export default function OrderStatusPage() {
   }
 
   const isPaid = order.paymentStatus === 'paid';
+  const isCancelled = isPaid && order.orderStatus === 'cancelled';
   const delivery =
     order.shipmentStatus === 'delivered'
       ? 'Delivered'
@@ -120,7 +123,23 @@ export default function OrderStatusPage() {
     <div className="container py-8 max-w-3xl space-y-8">
       {/* ─── Status Banner ─── */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm text-center space-y-4">
-        {isPaid ? (
+        {isCancelled ? (
+          <>
+            <div className="w-16 h-16 rounded-full bg-red-100 text-red-700 mx-auto flex items-center justify-center">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">
+              Order cancelled
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">This order was cancelled</h1>
+            <p className="text-sm text-neutral-700 max-w-md mx-auto">
+              <strong>Reason:</strong> {order.cancelReasonLabel || 'This order was cancelled.'}
+            </p>
+            <p className="text-sm font-medium text-neutral-900 max-w-md mx-auto">{order.refundNote}</p>
+          </>
+        ) : isPaid ? (
           <>
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -170,7 +189,7 @@ export default function OrderStatusPage() {
             <span className="text-xs text-neutral-400">Status</span>
             <div>
               <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
-                {isPaid ? delivery : 'Pending Payment'}
+                {isCancelled ? 'Cancelled' : isPaid ? delivery : 'Pending Payment'}
               </span>
             </div>
           </div>

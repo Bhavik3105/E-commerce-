@@ -22,19 +22,24 @@ interface AccountOrder {
   orderNumber: string;
   createdAt: string;
   total: number;
+  orderStatus: string;
   shipmentStatus: string;
+  cancelReasonLabel: string | null;
+  refundNote: string | null;
   items: AccountOrderItem[];
 }
 
-function deliveryLabel(status: string): string {
-  if (status === 'shipped') return 'Shipped';
-  if (status === 'delivered') return 'Delivered';
+function deliveryLabel(order: AccountOrder): string {
+  if (order.orderStatus === 'cancelled') return 'Cancelled';
+  if (order.shipmentStatus === 'shipped') return 'Shipped';
+  if (order.shipmentStatus === 'delivered') return 'Delivered';
   return 'Preparing to ship';
 }
 
-function deliveryClass(status: string): string {
-  if (status === 'delivered') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (status === 'shipped') return 'bg-sky-50 text-sky-700 border-sky-200';
+function deliveryClass(order: AccountOrder): string {
+  if (order.orderStatus === 'cancelled') return 'bg-red-50 text-red-700 border-red-200';
+  if (order.shipmentStatus === 'delivered') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  if (order.shipmentStatus === 'shipped') return 'bg-sky-50 text-sky-700 border-sky-200';
   return 'bg-amber-50 text-amber-700 border-amber-200';
 }
 
@@ -138,8 +143,8 @@ export default function AccountPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${deliveryClass(order.shipmentStatus)}`}>
-                    {deliveryLabel(order.shipmentStatus)}
+                  <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${deliveryClass(order)}`}>
+                    {deliveryLabel(order)}
                   </span>
                   <p className="mt-1 text-sm font-semibold text-neutral-900">{formatPrice(order.total)}</p>
                 </div>
@@ -170,6 +175,12 @@ export default function AccountPage() {
                   </li>
                 ))}
               </ul>
+
+              {order.orderStatus === 'cancelled' && (
+                <p className="pt-3 text-sm text-neutral-700">
+                  {order.cancelReasonLabel} {order.refundNote}
+                </p>
+              )}
 
               <Link
                 href={`/order/${order.orderNumber}/status`}

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config';
+import { refundNote } from './cancel-reasons';
 
 export function mailConfigured(): boolean {
   return Boolean(config.smtpHost && config.smtpUser && config.smtpPass && config.mailFrom);
@@ -210,6 +211,36 @@ export async function sendAdminOrderEmail(order: MailOrder): Promise<void> {
       <table style="width:100%;border-collapse:collapse">${itemHtml}</table>
       <p style="font-size:14px">Subtotal ${escapeHtml(rupees(order.subtotal))}<br>Delivery ${escapeHtml(delivery)}<br><strong>Total ${escapeHtml(rupees(order.total))}</strong></p>
       <p><a href="${escapeHtml(ordersUrl)}" style="display:inline-block;background:#171717;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600">Open orders</a></p>
+    </div>`,
+  });
+}
+
+export async function sendOrderCancelledEmail(order: MailOrder, reason: string): Promise<void> {
+  if (!order.customer?.email) return;
+  const customer = order.customer;
+  const orderUrl = `${config.storeUrl}/order/${encodeURIComponent(order.orderNumber)}/status`;
+  await sendMail({
+    to: customer.email,
+    subject: `Your Jummip order ${order.orderNumber} is cancelled`,
+    text: [
+      `Hello ${customer.name},`,
+      '',
+      `Order ${order.orderNumber} has been cancelled.`,
+      `Reason: ${reason}`,
+      '',
+      refundNote,
+      '',
+      `View this order: ${orderUrl}`,
+      '',
+      'Jummip',
+    ].join('\n'),
+    html: `<div style="font-family:Arial,sans-serif;color:#171717;line-height:1.5;max-width:520px">
+      <p>Hello ${escapeHtml(customer.name)},</p>
+      <p>Order <strong>${escapeHtml(order.orderNumber)}</strong> has been cancelled.</p>
+      <p><strong>Reason</strong><br>${escapeHtml(reason)}</p>
+      <p>${escapeHtml(refundNote)}</p>
+      <p><a href="${escapeHtml(orderUrl)}" style="display:inline-block;background:#171717;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600">View order status</a></p>
+      <p style="font-size:13px;color:#737373">Jummip</p>
     </div>`,
   });
 }
